@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"encoding/json"
 	"goim/libs/define"
 	"goim/libs/proto"
@@ -40,15 +41,29 @@ func (operator *DefaultOperator) Operate(p *proto.Proto) error {
 		json.Unmarshal(p.Body, &rpc)
 		log.Info("rpc.obj = %s", rpc.Obj)
 		log.Info("rpc.func = %s", rpc.Func)
-		log.Info("rpc.req = %s", hex.Dump(rpc.Req))
+		if len(rpc.Req) < 2 {
+			err := fmt.Errorf("rpc.req is not a json string: %s", rpc.Req)
+			log.Error("%v", err)
+			return err
+		}
+		rpc.Req = rpc.Req[1:len(rpc.Req)-1]
+		rpcReqBuf, err := hex.DecodeString(string(rpc.Req))
+		if err != nil {
+			err := fmt.Errorf("rpc.req can not be decode to hex: %s", rpc.Req)
+			log.Error("%v", err)
+			return err
+		}
+		log.Info("rpc.req = \n%s", hex.Dump(rpcReqBuf))
 
 		rpcStub := operator.Comm.GetServantProxy(rpc.Obj)
-		rpcResp, err := rpcStub.Taf_invoke(context.TODO(), 0, rpc.Func, rpc.Req, nil, nil)
+		rpcResp, err := rpcStub.Taf_invoke(context.TODO(), 0, rpc.Func, rpcReqBuf, nil, nil)
 		if err != nil {
 			log.Error("rpc.invoke error: %v", err)
 			return err
 		}
-		p.Body = rpcResp.SBuffer
+
+		log.Info("rpc.rsp = \n%s", hex.Dump(rpcResp.SBuffer))
+		p.Body = []byte(`"` + hex.EncodeToString(rpcResp.SBuffer) + `"`)
 		p.Operation = define.OP_SEND_SMS_REPLY
 	} else if p.Operation == define.OP_TEST {
 		log.Debug("test operation: %s", body)
