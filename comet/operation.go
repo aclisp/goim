@@ -1,11 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"goim/libs/define"
 	"goim/libs/proto"
 	"time"
 
 	log "github.com/thinkboy/log4go"
+	"yytars/tars/servant"
+	"context"
+	"encoding/hex"
 )
 
 type Operator interface {
@@ -18,6 +22,7 @@ type Operator interface {
 }
 
 type DefaultOperator struct {
+	Comm *servant.Communicator
 }
 
 func (operator *DefaultOperator) Operate(p *proto.Proto) error {
@@ -25,10 +30,26 @@ func (operator *DefaultOperator) Operate(p *proto.Proto) error {
 		body []byte
 	)
 	if p.Operation == define.OP_SEND_SMS {
-		// call suntao's api
-		// p.Body = nil
+		// call yytars api
+		type RPC struct {
+			Obj string `json:"obj"`
+			Func string `json:"func"`
+			Req json.RawMessage `json:"req"`
+		}
+		var rpc RPC
+		json.Unmarshal(p.Body, &rpc)
+		log.Info("rpc.obj = %s", rpc.Obj)
+		log.Info("rpc.func = %s", rpc.Func)
+		log.Info("rpc.req = %s", hex.Dump(rpc.Req))
+
+		rpcStub := operator.Comm.GetServantProxy(rpc.Obj)
+		rpcResp, err := rpcStub.Taf_invoke(context.TODO(), 0, rpc.Func, rpc.Req, nil, nil)
+		if err != nil {
+			log.Error("rpc.invoke error: %v", err)
+			return err
+		}
+		p.Body = rpcResp.SBuffer
 		p.Operation = define.OP_SEND_SMS_REPLY
-		log.Info("send sms proto: %v", p)
 	} else if p.Operation == define.OP_TEST {
 		log.Debug("test operation: %s", body)
 		p.Operation = define.OP_TEST_REPLY
