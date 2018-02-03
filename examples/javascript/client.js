@@ -3,6 +3,7 @@
         var MAX_CONNECT_TIME = 10;
         var DELAY = 15000;
         this.options = options || {};
+        this.ws = new WebSocket('ws://183.3.211.40:8090/sub');
         this.createConnect(MAX_CONNECT_TIME, DELAY);
     }
 
@@ -16,7 +17,7 @@
         var heartbeatInterval;
 
         function connect() {
-            var ws = new WebSocket('ws://localhost:8090/sub');
+            var ws = self.ws
             var auth = false;
 
             ws.onopen = function() {
@@ -37,7 +38,7 @@
                     }
                     if (auth && data.op == 5) {
                         var notify = self.options.notify;
-                        if(notify) notify(data.body);
+                        if(notify) notify(data.body, data.seq);
                     }
                 }
             }
@@ -61,9 +62,7 @@
                     'ver': 1,
                     'op': 7,
                     'seq': 1,
-                    'body': {
-                        'data': {}
-                    }
+                    'body': self.options.uid
                 }));
             }
 
@@ -72,6 +71,15 @@
         function reConnect() {
             self.createConnect(--max, delay * 2);
         }
+    }
+
+    Client.prototype.send = function(rpc, seq) {
+        this.ws.send(JSON.stringify({
+            'ver': 1,
+            'op': 4,
+            'seq': seq,
+            'body': rpc
+        }));
     }
 
     win['MyClient'] = Client;

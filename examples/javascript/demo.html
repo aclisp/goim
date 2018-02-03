@@ -7,13 +7,58 @@
   </head>
   <body>
     <h1>client demo</h1>
+    <button onclick="myFunction()">Click me</button>
+    <script src="https://cdn.rawgit.com/dcodeIO/protobuf.js/6.8.0/dist/protobuf.js"></script>
     <script src="client.js"></script>
     <script>
+      function bufferToString(buffer) {
+          return Array.from(buffer).map(function (x) {
+              return ('00' + x.toString(16)).slice(-2)
+          }).join('');
+      }
+      function stringToBuffer(string) {
+          var buffer = new Uint8Array(string.length/2);
+          for (var i=0; i < string.length/2; i++) {
+              buffer[i] = parseInt(string.substr(i*2, 2), 16)
+          }
+          return buffer
+      }
+      var proto
       var client = new MyClient({
-        notify: function(data) {
-          alert(data);
-        }
+          uid: '88889999',
+          notify: function(data, seq) {
+              if (seq === 0) {
+                  alert('收到广播消息: ' + data.test);
+                  return
+              }
+              var PQueryUserAttentionListRsp = proto.lookupType("YYLiteApp.AttentionSrv.PQueryUserAttentionListRsp");
+              var rsp = PQueryUserAttentionListRsp.decode(stringToBuffer(data));
+              var note = rsp.Uid + " 的关注列表：\n\n"
+              for (var uid in rsp.Attentionlist) {
+                  note += uid + " " + rsp.Attentionlist[uid] + "\n"
+              }
+              alert(note)
+          }
       });
+      protobuf.load("AttentionSrv.proto", function(err, root) {
+          if (err)
+              throw err;
+          proto = root
+      })
+      function myFunction() {
+          var PQueryUserAttentionListReq = proto.lookupType("YYLiteApp.AttentionSrv.PQueryUserAttentionListReq");
+          var payload = { Uid: 1304934619, AppData: "mobAttentionLite" };
+          var errMsg = PQueryUserAttentionListReq.verify(payload);
+          if (errMsg)
+              throw Error(errMsg);
+          var message = PQueryUserAttentionListReq.create(payload);
+          var buffer = PQueryUserAttentionListReq.encode(message).finish();
+          client.send({
+              obj: 'YYLiteApp.AttentionSrv.AttentionObj@tcp -h 58.215.138.213 -p 22018 -t 6000',
+              func: 'QueryUserAttentionList',
+              req: bufferToString(buffer)
+          }, 2)
+      }
     </script>
   </body>
 </html>
