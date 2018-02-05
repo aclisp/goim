@@ -63,6 +63,38 @@ func (b *Bucket) Put(key string, ch *Channel) (err error) {
 	return
 }
 
+// Change the channel's RoomId by sub key.
+func (b *Bucket) Change(key string, rid int32) (orid int32, err error) {
+	var (
+		ch   *Channel
+		room *Room
+		ok   bool
+	)
+	ch = b.Channel(key)
+	orid = ch.RoomId
+	if orid == rid {
+		return
+	}
+	room = b.Room(orid)
+	if room != nil && room.Del(ch) {
+		b.DelRoom(orid)
+	}
+	ch.RoomId = rid
+	if ch.RoomId == define.NoRoom {
+		return
+	}
+	b.cLock.Lock()
+	if room, ok = b.rooms[ch.RoomId]; !ok {
+		room = NewRoom(ch.RoomId)
+		b.rooms[ch.RoomId] = room
+	}
+	b.cLock.Unlock()
+	if room != nil {
+		err = room.Put(ch)
+	}
+	return
+}
+
 // Del delete the channel by sub key.
 func (b *Bucket) Del(key string) {
 	var (

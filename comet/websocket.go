@@ -12,6 +12,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	log "github.com/thinkboy/log4go"
+	"strconv"
+	"fmt"
 )
 
 var upgrader = websocket.Upgrader{
@@ -151,6 +153,17 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 			tr.Set(trd, hb)
 			p.Body = nil
 			p.Operation = define.OP_HEARTBEAT_REPLY
+		} else if p.Operation == define.OP_ROOM_CHANGE {
+			var ack string
+			if rid, err := strconv.ParseInt(string(p.Body), 10, 32); err != nil {
+				ack = fmt.Sprintf("invalid roomid: %s", p.Body)
+			} else if orid, err := b.Change(key, int32(rid)); err != nil {
+				ack = fmt.Sprintf("change roomid %d->%d err: %v", orid, rid, err)
+			} else {
+				ack = fmt.Sprintf("change roomid %d->%d ok", orid, rid)
+			}
+			p.Body = []byte(ack)
+			p.Operation = define.OP_ROOM_CHANGE_REPLY
 		} else {
 			// process message
 			if err = server.operator.Operate(p); err != nil {
