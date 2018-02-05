@@ -48,7 +48,10 @@
       }
       function ChangeRoom() {
           var roomid = parseInt(document.querySelector('#roomid').value);
-          client.join(roomid);
+          client.join(roomid, function(ret, msg) {
+              var note = ((ret === 0)?"成功!":"失败!") + " " + msg;
+              alert(note)
+          });
       }
     </script>
   </body>

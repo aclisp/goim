@@ -53,10 +53,9 @@
                             var p = self.pending[data.seq];
                             delete self.pending[data.seq];
                             var rspT = p.rspT;
-                            var callback = p.callback;
                             var rspM = rspT.decode(stringToBuffer(data.body));
                             var rsp = rspT.toObject(rspM);
-                            callback(rsp);
+                            p.callback(rsp);
                         } else {
                             var notify = self.options.notify;
                             if (notify && data.seq === 0) {
@@ -65,7 +64,11 @@
                         }
                     }
                     if (auth && data.op === 16) {
-                        console.log(data.body)
+                        if (data.seq > 0) {
+                            var p = self.pending[data.seq];
+                            delete self.pending[data.seq];
+                            p.callback(data.body.ret, data.body.msg)
+                        }
                     }
                 }
             };
@@ -79,7 +82,7 @@
                 ws.send(JSON.stringify({
                     'ver': 1,
                     'op': 2,
-                    'seq': 2,
+                    'seq': self.nextCallid(),
                     'body': {}
                 }));
             }
@@ -88,7 +91,7 @@
                 ws.send(JSON.stringify({
                     'ver': 1,
                     'op': 7,
-                    'seq': 1,
+                    'seq': self.nextCallid(),
                     'body': self.options.uid
                 }));
             }
@@ -134,13 +137,17 @@
         };
     };
 
-    Client.prototype.join = function(roomid) {
+    Client.prototype.join = function(roomid, callback) {
+        var seq = this.nextCallid();
         this.wsocket.send(JSON.stringify({
             'ver': 1,
             'op': 15,
-            'seq': 3,
+            'seq': seq,
             'body': roomid
-        }))
+        }));
+        this.pending[seq] = {
+            callback: callback
+        }
     };
 
     win['TarsClient'] = Client;
