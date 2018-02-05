@@ -8,6 +8,8 @@
   <body>
     <h1>client demo</h1>
     <button onclick="QueryUserAttentionList()">Click me</button>
+    <button onclick="ChangeRoom()">Change room</button>
+    <input id="roomid">
     <script src="https://cdn.rawgit.com/dcodeIO/protobuf.js/6.8.0/dist/protobuf.js"></script>
     <script src="client.js"></script>
     <script>
@@ -43,6 +45,10 @@
                   alert(note);
               }
           });
+      }
+      function ChangeRoom() {
+          var roomid = parseInt(document.querySelector('#roomid').value);
+          client.join(roomid);
       }
     </script>
   </body>

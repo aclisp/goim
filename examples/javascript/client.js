@@ -64,6 +64,9 @@
                             }
                         }
                     }
+                    if (auth && data.op === 16) {
+                        console.log(data.body)
+                    }
                 }
             };
 
@@ -129,6 +132,15 @@
             rspT: rspT,
             callback: callback
         };
+    };
+
+    Client.prototype.join = function(roomid) {
+        this.wsocket.send(JSON.stringify({
+            'ver': 1,
+            'op': 15,
+            'seq': 3,
+            'body': roomid
+        }))
     };
 
     win['TarsClient'] = Client;
