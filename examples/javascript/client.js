@@ -135,15 +135,9 @@
 })(window);
 
 function bufferToString(buffer) {
-    return Array.from(buffer).map(function (x) {
-        return ('00' + x.toString(16)).slice(-2)
-    }).join('');
+    return btoa(String.fromCharCode.apply(null, Array.from(buffer)));
 }
 
 function stringToBuffer(string) {
-    var buffer = new Uint8Array(string.length/2);
-    for (var i=0; i < string.length/2; i++) {
-        buffer[i] = parseInt(string.substr(i*2, 2), 16)
-    }
-    return buffer
+    return new Uint8Array(atob(string).split('').map(function(c) { return c.charCodeAt(0); }));
 }

@@ -11,13 +11,14 @@
     <script src="https://cdn.rawgit.com/dcodeIO/protobuf.js/6.8.0/dist/protobuf.js"></script>
     <script src="client.js"></script>
     <script>
-      var proto = null;
       var client = new TarsClient({
           uid: '88889999',
           notify: function(data) {
               alert('收到广播消息: ' + data.test);
           }
       });
+
+      var proto = null;
       protobuf.load("AttentionSrv.proto", function(err, root) {
           if (err)
               throw err;
