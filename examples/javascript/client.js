@@ -4,7 +4,18 @@
         var DELAY = 15000;
         this.options = options || {};
         this.wsocket = null;
+        this.callid = 0;
+        this.pending = {};
         this.createConnect(MAX_CONNECT_TIME, DELAY);
+    };
+
+    Client.prototype.nextCallid = function() {
+        if (this.callid === Number.MAX_SAFE_INTEGER) {
+            this.callid = 1;
+        } else {
+            this.callid = 1 + this.callid;
+        }
+        return this.callid;
     };
 
     Client.prototype.createConnect = function(max, delay) {
@@ -38,8 +49,20 @@
                         setTimeout(getAuth, delay);
                     }
                     if (auth && data.op === 5) {
-                        var notify = self.options.notify;
-                        if(notify) notify(data.body, data.seq);
+                        if (data.seq > 0) {
+                            var p = self.pending[data.seq];
+                            delete self.pending[data.seq];
+                            var rspT = p.rspT;
+                            var callback = p.callback;
+                            var rspM = rspT.decode(stringToBuffer(data.body));
+                            var rsp = rspT.toObject(rspM);
+                            callback(rsp);
+                        } else {
+                            var notify = self.options.notify;
+                            if (notify && data.seq === 0) {
+                                notify(data.body);
+                            }
+                        }
                     }
                 }
             };
@@ -83,6 +106,31 @@
         }));
     };
 
+    Client.prototype.call = function(options) {
+        var proto = options.proto;
+        var reqtype = options.reqtype;
+        var rsptype = options.rsptype;
+        var req = options.req;
+        var service = options.service;
+        var method = options.method;
+        var callback = options.callback;
+
+        var reqT = proto.lookupType(reqtype);
+        var rspT = proto.lookupType(rsptype);
+        var reqM = reqT.fromObject(req);
+        var reqB = reqT.encode(reqM).finish();
+        var seq = this.nextCallid();
+        this.send({
+            obj: service,
+            func: method,
+            req: bufferToString(reqB)
+        }, seq);
+        this.pending[seq] = {
+            rspT: rspT,
+            callback: callback
+        };
+    };
+
     win['TarsClient'] = Client;
 })(window);
 
@@ -91,6 +139,7 @@ function bufferToString(buffer) {
         return ('00' + x.toString(16)).slice(-2)
     }).join('');
 }
+
 function stringToBuffer(string) {
     var buffer = new Uint8Array(string.length/2);
     for (var i=0; i < string.length/2; i++) {
