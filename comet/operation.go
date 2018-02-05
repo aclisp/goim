@@ -10,6 +10,7 @@ import (
 	log "github.com/thinkboy/log4go"
 	"yytars/tars/servant"
 	"context"
+	"encoding/base64"
 	"encoding/hex"
 )
 
@@ -47,7 +48,7 @@ func (operator *DefaultOperator) Operate(p *proto.Proto) error {
 			return err
 		}
 		rpc.Req = rpc.Req[1:len(rpc.Req)-1]
-		rpcReqBuf, err := hex.DecodeString(string(rpc.Req))
+		rpcReqBuf, err := base64.StdEncoding.DecodeString(string(rpc.Req))
 		if err != nil {
 			err := fmt.Errorf("rpc.req can not be decode to hex: %s", rpc.Req)
 			log.Error("%v", err)
@@ -63,7 +64,7 @@ func (operator *DefaultOperator) Operate(p *proto.Proto) error {
 		}
 
 		log.Info("rpc.rsp = \n%s", hex.Dump(rpcResp.SBuffer))
-		p.Body = []byte(`"` + hex.EncodeToString(rpcResp.SBuffer) + `"`)
+		p.Body = []byte(`"` + base64.StdEncoding.EncodeToString(rpcResp.SBuffer) + `"`)
 		p.Operation = define.OP_SEND_SMS_REPLY
 	} else if p.Operation == define.OP_TEST {
 		log.Debug("test operation: %s", body)
