@@ -154,15 +154,19 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 			p.Body = nil
 			p.Operation = define.OP_HEARTBEAT_REPLY
 		} else if p.Operation == define.OP_ROOM_CHANGE {
-			var ack string
+			var ret int
+			var msg string
 			if rid, err := strconv.ParseInt(string(p.Body), 10, 32); err != nil {
-				ack = fmt.Sprintf("invalid roomid: %s", p.Body)
+				ret = 1
+				msg = fmt.Sprintf("invalid roomid: %s", p.Body)
 			} else if orid, err := b.Change(key, int32(rid)); err != nil {
-				ack = fmt.Sprintf("change roomid %d->%d err: %v", orid, rid, err)
+				ret = 2
+				msg = fmt.Sprintf("change roomid %d->%d err: %v", orid, rid, err)
 			} else {
-				ack = fmt.Sprintf("change roomid %d->%d ok", orid, rid)
+				ret = 0
+				msg = fmt.Sprintf("change roomid %d->%d ok", orid, rid)
 			}
-			p.Body = []byte(ack)
+			p.Body = []byte(fmt.Sprintf(`{"ret":%d,"msg":%q}`, ret, msg))
 			p.Operation = define.OP_ROOM_CHANGE_REPLY
 		} else {
 			// process message
