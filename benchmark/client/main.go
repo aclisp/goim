@@ -153,7 +153,7 @@ func startClient(key string) {
 			log.Debug("key:%s write heartbeat", key)
 			// test heartbeat
 			//time.Sleep(heart)
-			time.Sleep(1 * time.Millisecond)
+			time.Sleep(10 * time.Millisecond)
 			seqId++
 			select {
 			case <-quit:
