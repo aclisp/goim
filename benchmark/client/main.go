@@ -11,14 +11,16 @@ import (
 	"flag"
 	"fmt"
 	//mrand "math/rand"
-	"net"
+	"encoding/json"
 	"os"
 	"runtime"
 	"strconv"
 	"sync/atomic"
 	"time"
 
+	"github.com/gorilla/websocket"
 	log "github.com/thinkboy/log4go"
+	"net/url"
 )
 
 const (
@@ -41,12 +43,15 @@ const (
 )
 
 type Proto struct {
-	PackLen   int32  // package length
-	HeaderLen int16  // header length
-	Ver       int16  // protocol version
-	Operation int32  // operation for request
-	SeqId     int32  // sequence number chosen by client
-	Body      []byte // body
+	Ver       int16           `json:"ver"`  // protocol version
+	Operation int32           `json:"op"`   // operation for request
+	SeqId     int32           `json:"seq"`  // sequence number chosen by client
+	Body      json.RawMessage `json:"body"` // binary body bytes(json.RawMessage is []byte)
+}
+
+func (p *Proto) String() string {
+	b, _ := json.Marshal(p)
+	return string(b)
 }
 
 var (
@@ -55,7 +60,7 @@ var (
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	log.Global = log.NewDefaultLogger(log.DEBUG)
+	log.Global = log.NewDefaultLogger(log.INFO)
 	flag.Parse()
 	defer log.Close()
 	begin, err := strconv.Atoi(os.Args[1])
@@ -71,7 +76,7 @@ func main() {
 	go result()
 
 	for i := begin; i < begin+num; i++ {
-		go client(fmt.Sprintf("%d", i))
+		go client(fmt.Sprintf(`"%d"`, i))
 	}
 
 	var exit chan bool
@@ -107,14 +112,13 @@ func startClient(key string) {
 	quit := make(chan bool, 1)
 	defer close(quit)
 
-	conn, err := net.Dial("tcp", os.Args[3])
+	u := url.URL{Scheme: "ws", Host: os.Args[3], Path: "/sub"}
+	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Error("net.Dial(\"%s\") error(%v)", os.Args[3], err)
 		return
 	}
 	seqId := int32(0)
-	wr := bufio.NewWriter(conn)
-	rd := bufio.NewReader(conn)
 	proto := new(Proto)
 	proto.Ver = 1
 	// auth
@@ -123,15 +127,16 @@ func startClient(key string) {
 	proto.Operation = OP_AUTH
 	proto.SeqId = seqId
 	proto.Body = []byte(key)
-	if err = tcpWriteProto(wr, proto); err != nil {
-		log.Error("tcpWriteProto() error(%v)", err)
+	if err = websocketWriteProto(conn, proto); err != nil {
+		log.Error("websocketWriteProto() error(%v)", err)
 		return
 	}
-	if err = tcpReadProto(rd, proto); err != nil {
-		log.Error("tcpReadProto() error(%v)", err)
+	plist := make([]Proto, 0, 1)
+	if err = websocketReadProto(conn, &plist); err != nil {
+		log.Error("websocketReadProto() error(%v)", err)
 		return
 	}
-	log.Debug("key:%s auth ok, proto: %v", key, proto)
+	log.Debug("key:%s auth ok", key)
 	seqId++
 	// writer
 	go func() {
@@ -141,13 +146,14 @@ func startClient(key string) {
 			proto1.Operation = OP_HEARTBEAT
 			proto1.SeqId = seqId
 			proto1.Body = nil
-			if err = tcpWriteProto(wr, proto1); err != nil {
-				log.Error("key:%s tcpWriteProto() error(%v)", key, err)
+			if err = websocketWriteProto(conn, proto1); err != nil {
+				log.Error("key:%s websocketWriteProto() error(%v)", key, err)
 				return
 			}
-			log.Debug("key:%s Write heartbeat", key)
+			log.Debug("key:%s write heartbeat", key)
 			// test heartbeat
-			time.Sleep(heart)
+			//time.Sleep(heart)
+			time.Sleep(1 * time.Millisecond)
 			seqId++
 			select {
 			case <-quit:
@@ -158,23 +164,27 @@ func startClient(key string) {
 	}()
 	// reader
 	for {
-		if err = tcpReadProto(rd, proto); err != nil {
-			log.Error("key:%s tcpReadProto() error(%v)", key, err)
+		plist = plist[:0]
+		if err = websocketReadProto(conn, &plist); err != nil {
+			log.Error("key:%s websocketReadProto() error(%v)", key, err)
 			quit <- true
 			return
 		}
-		if proto.Operation == OP_HEARTBEAT_REPLY {
-			log.Debug("key:%s receive heartbeat", key)
-			if err = conn.SetReadDeadline(time.Now().Add(heart + 60*time.Second)); err != nil {
-				log.Error("conn.SetReadDeadline() error(%v)", err)
-				quit <- true
-				return
+		for _, proto := range plist {
+			if proto.Operation == OP_HEARTBEAT_REPLY {
+				log.Debug("key:%s receive heartbeat", key)
+				if err = conn.SetReadDeadline(time.Now().Add(heart + 60*time.Second)); err != nil {
+					log.Error("conn.SetReadDeadline() error(%v)", err)
+					quit <- true
+					return
+				}
+				atomic.AddInt64(&countDown, 1)
+			} else if proto.Operation == OP_TEST_REPLY {
+				log.Debug("body: %s", string(proto.Body))
+			} else if proto.Operation == OP_SEND_SMS_REPLY {
+				log.Info("key:%s msg: %s", key, string(proto.Body))
+				atomic.AddInt64(&countDown, 1)
 			}
-		} else if proto.Operation == OP_TEST_REPLY {
-			log.Debug("body: %s", string(proto.Body))
-		} else if proto.Operation == OP_SEND_SMS_REPLY {
-			log.Info("key:%s msg: %s", key, string(proto.Body))
-			atomic.AddInt64(&countDown, 1)
 		}
 	}
 }
@@ -254,4 +264,21 @@ func tcpReadProto(rd *bufio.Reader, proto *Proto) (err error) {
 		proto.Body = nil
 	}
 	return
+}
+
+func websocketReadProto(conn *websocket.Conn, plist *[]Proto) error {
+	err := conn.ReadJSON(plist)
+	if err == nil {
+		b, _ := json.Marshal(plist)
+		log.Debug("websocketReadProto: %s", string(b))
+	}
+	return err
+}
+
+func websocketWriteProto(conn *websocket.Conn, p *Proto) error {
+	if p.Body == nil {
+		p.Body = []byte("{}")
+	}
+	log.Debug("websocketWriteProto: %s", p)
+	return conn.WriteJSON(p)
 }
