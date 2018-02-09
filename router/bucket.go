@@ -4,6 +4,7 @@ import (
 	"goim/libs/define"
 	"sync"
 	"time"
+	"goim/libs/proto"
 )
 
 type Bucket struct {
@@ -58,6 +59,14 @@ func (b *Bucket) counter(userId int64, server int32, roomId int32, incr bool) {
 		b.roomCounter[roomId]--
 		b.serverCounter[server]--
 	}
+}
+
+func (b *Bucket) counterRoom(userId int64, server, oldRoomId, roomId int32) {
+	if oldRoomId == roomId {
+		return
+	}
+	b.roomCounter[oldRoomId]--
+	b.roomCounter[roomId]++
 }
 
 // Put put a channel according with user id.
@@ -133,6 +142,24 @@ func (b *Bucket) Del(userId int64, seq int32, roomId int32) (ok bool) {
 	if empty {
 		b.cleaner.PushFront(userId, Conf.SessionExpire)
 	}
+	return
+}
+
+// Mov moves the channel from oldRoomId to roomId
+func (b *Bucket) Mov(userId int64, seq int32, oldRoomId int32, roomId int32) (ok bool) {
+	var (
+		s      *Session
+		server int32
+		has    bool
+	)
+	b.bLock.Lock()
+	if s, ok = b.sessions[userId]; ok {
+		has, server = s.MovRoom(seq, oldRoomId, roomId)
+		if has {
+			b.counterRoom(userId, server, oldRoomId, roomId)
+		}
+	}
+	b.bLock.Unlock()
 	return
 }
 
@@ -217,6 +244,21 @@ func (b *Bucket) UserCount(userId int64) (count int32) {
 	b.bLock.RLock()
 	if s, ok := b.sessions[userId]; ok {
 		count = int32(s.Count())
+	}
+	b.bLock.RUnlock()
+	return
+}
+
+func (b *Bucket) UserSession(userId int64) (us *proto.UserSession) {
+	b.bLock.RLock()
+	if s, ok := b.sessions[userId]; ok {
+		us = &proto.UserSession{
+			UserId:  userId,
+			Count:   int32(s.Count()),
+			Seq:     s.seq,
+			Servers: s.servers,
+			Rooms:   s.rooms,
+		}
 	}
 	b.bLock.RUnlock()
 	return

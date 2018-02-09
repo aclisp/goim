@@ -71,6 +71,11 @@ func (r *RouterRPC) Del(arg *proto.DelArg, reply *proto.DelReply) error {
 	return nil
 }
 
+func (r *RouterRPC) Mov(arg *proto.MovArg, reply *proto.MovReply) error {
+	reply.Has = r.bucket(arg.UserId).Mov(arg.UserId, arg.Seq, arg.OldRoomId, arg.RoomId)
+	return nil
+}
+
 func (r *RouterRPC) DelServer(arg *proto.DelServerArg, reply *proto.NoReply) error {
 	var (
 		bucket *Bucket
@@ -174,5 +179,10 @@ func (r *RouterRPC) AllServerCount(arg *proto.NoArg, reply *proto.AllServerCount
 
 func (r *RouterRPC) UserCount(arg *proto.UserCountArg, reply *proto.UserCountReply) error {
 	reply.Count = int32(r.bucket(arg.UserId).UserCount(arg.UserId))
+	return nil
+}
+
+func (r *RouterRPC) UserSession(arg *proto.UserSessionArg, reply *proto.UserSessionReply) error {
+	reply.UserSession = r.bucket(arg.UserId).UserSession(arg.UserId)
 	return nil
 }

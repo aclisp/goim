@@ -1,5 +1,7 @@
 package main
 
+import "goim/libs/define"
+
 type Session struct {
 	seq     int32
 	servers map[int32]int32           // seq:server
@@ -78,6 +80,34 @@ func (s *Session) DelRoom(seq int32, roomId int32) (has, empty bool, server int3
 		if len(room) == 0 {
 			delete(s.rooms, roomId)
 		}
+	}
+	return
+}
+
+// MovRoom keep the session, but move room from old to new.
+func (s *Session) MovRoom(seq int32, oldRoomId int32, roomId int32) (has bool, server int32) {
+	var (
+		ok   bool
+		room map[int32]int32
+	)
+	server, has = s.servers[seq]
+	if oldRoomId == roomId {
+		return
+	}
+	if oldRoomId != define.NoRoom {
+		if room, ok = s.rooms[oldRoomId]; ok {
+			delete(room, seq)
+			if len(room) == 0 {
+				delete(s.rooms, oldRoomId)
+			}
+		}
+	}
+	if roomId != define.NoRoom {
+		if room, ok = s.rooms[roomId]; !ok {
+			room = make(map[int32]int32)
+			s.rooms[roomId] = room
+		}
+		room[seq] = server
 	}
 	return
 }

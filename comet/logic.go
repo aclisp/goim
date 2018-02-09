@@ -17,6 +17,7 @@ var (
 	logicServicePing       = "RPC.Ping"
 	logicServiceConnect    = "RPC.Connect"
 	logicServiceDisconnect = "RPC.Disconnect"
+	logicServiceChangeRoom = "RPC.ChangeRoom"
 )
 
 func InitLogicRpc(addrs []string) (err error) {
@@ -65,8 +66,20 @@ func disconnect(key string, roomId int32) (has bool, err error) {
 		reply = proto.DisconnReply{}
 	)
 	if err = logicRpcClient.Call(logicServiceDisconnect, &arg, &reply); err != nil {
-		log.Error("c.Call(\"%s\", \"%v\", &ret) error(%v)", logicServiceConnect, arg, err)
+		log.Error("c.Call(\"%s\", \"%v\", &ret) error(%v)", logicServiceDisconnect, arg, err)
 		return
+	}
+	has = reply.Has
+	return
+}
+
+func changeRoom(key string, orid int32, rid int32) (has bool, err error) {
+	var (
+		arg   = proto.ChangeRoomArg{Key: key, OldRoomId: orid, RoomId: rid}
+		reply = proto.ChangeRoomReply{}
+	)
+	if err = logicRpcClient.Call(logicServiceChangeRoom, &arg, &reply); err != nil {
+		log.Error("c.Call(\"%s\", \"%v\", &ret) error(%v)", logicServiceChangeRoom, arg, err)
 	}
 	has = reply.Has
 	return

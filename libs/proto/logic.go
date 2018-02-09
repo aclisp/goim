@@ -18,3 +18,13 @@ type DisconnArg struct {
 type DisconnReply struct {
 	Has bool
 }
+
+type ChangeRoomArg struct {
+	Key       string
+	OldRoomId int32
+	RoomId    int32
+}
+
+type ChangeRoomReply struct {
+	Has bool
+}

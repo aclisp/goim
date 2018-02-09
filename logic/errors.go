@@ -10,4 +10,5 @@ var (
 	ErrNetworkAddr    = errors.New("network addrs error, must network@address")
 	ErrConnectArgs    = errors.New("connect rpc args error")
 	ErrDisconnectArgs = errors.New("disconnect rpc args error")
+	ErrChangeRoomArgs = errors.New("changeroom rpc args error")
 )

@@ -87,3 +87,21 @@ func (r *RPC) Disconnect(arg *proto.DisconnArg, reply *proto.DisconnReply) (err 
 	reply.Has, err = disconnect(uid, seq, arg.RoomId)
 	return
 }
+
+func (r *RPC) ChangeRoom(arg *proto.ChangeRoomArg, reply *proto.ChangeRoomReply) (err error) {
+	if arg == nil {
+		err = ErrChangeRoomArgs
+		log.Error("ChangeRoom() error(%v)", err)
+		return
+	}
+	var (
+		uid int64
+		seq int32
+	)
+	if uid, seq, err = decode(arg.Key); err != nil {
+		log.Error("decode(\"%s\") error(%s)", arg.Key, err)
+		return
+	}
+	reply.Has, err = changeRoom(uid, seq, arg.OldRoomId, arg.RoomId)
+	return
+}

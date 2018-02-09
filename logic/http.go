@@ -10,6 +10,7 @@ import (
 	"time"
 
 	log "github.com/thinkboy/log4go"
+	"goim/libs/proto"
 )
 
 func InitHTTP() (err error) {
@@ -23,6 +24,7 @@ func InitHTTP() (err error) {
 		httpServeMux.HandleFunc("/1/push/room", PushRoom)
 		httpServeMux.HandleFunc("/1/server/del", DelServer)
 		httpServeMux.HandleFunc("/1/count", Count)
+		httpServeMux.HandleFunc("/1/session", Session)
 		log.Info("start http listen:\"%s\"", Conf.HTTPAddrs[i])
 		if network, addr, err = inet.ParseNetwork(Conf.HTTPAddrs[i]); err != nil {
 			log.Error("inet.ParseNetwork() error(%v)", err)
@@ -266,6 +268,32 @@ func Count(w http.ResponseWriter, r *http.Request) {
 		}
 		res["data"] = d
 	}
+	return
+}
+
+func Session(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Method Not Allowed", 405)
+		return
+	}
+	var (
+		session   *proto.UserSession
+		err       error
+		userId    int64
+		uidStr    = r.URL.Query().Get("uid")
+		res       = map[string]interface{}{"ret": OK}
+	)
+	defer retWrite(w, r, res, time.Now())
+	if userId, err = strconv.ParseInt(uidStr, 10, 64); err != nil {
+		log.Error("strconv.Atoi(\"%s\") error(%v)", uidStr, err)
+		res["ret"] = InternalErr
+		return
+	}
+	if session, err = userSession(userId); err != nil {
+		res["ret"] = InternalErr
+		return
+	}
+	res["session"] = session
 	return
 }
 

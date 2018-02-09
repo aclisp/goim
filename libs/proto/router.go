@@ -20,6 +20,17 @@ type DelReply struct {
 	Has bool
 }
 
+type MovArg struct {
+	UserId    int64
+	Seq       int32
+	OldRoomId int32
+	RoomId    int32
+}
+
+type MovReply struct {
+	Has bool
+}
+
 type DelServerArg struct {
 	Server int32
 }
@@ -73,4 +84,20 @@ type UserCountArg struct {
 
 type UserCountReply struct {
 	Count int32
+}
+
+type UserSessionArg struct {
+	UserId int64
+}
+
+type UserSession struct {
+	UserId  int64
+	Count   int32
+	Seq     int32
+	Servers map[int32]int32
+	Rooms   map[int32]map[int32]int32
+}
+
+type UserSessionReply struct {
+	*UserSession
 }

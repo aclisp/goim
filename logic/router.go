@@ -21,12 +21,14 @@ const (
 	routerServicePing           = "RouterRPC.Ping"
 	routerServicePut            = "RouterRPC.Put"
 	routerServiceDel            = "RouterRPC.Del"
+	routerServiceMov            = "RouterRPC.Mov"
 	routerServiceDelServer      = "RouterRPC.DelServer"
 	routerServiceAllRoomCount   = "RouterRPC.AllRoomCount"
 	routerServiceAllServerCount = "RouterRPC.AllServerCount"
 	routerServiceGet            = "RouterRPC.Get"
 	routerServiceMGet           = "RouterRPC.MGet"
 	routerServiceGetAll         = "RouterRPC.GetAll"
+	routerServiceUserSession    = "RouterRPC.UserSession"
 )
 
 func InitRouter(addrs map[string]string) (err error) {
@@ -105,6 +107,40 @@ func disconnect(userID int64, seq, roomId int32) (has bool, err error) {
 		log.Error("c.Call(\"%s\",\"%v\") error(%v)", routerServiceDel, args, err)
 	} else {
 		has = reply.Has
+	}
+	return
+}
+
+func changeRoom(userId int64, seq, oldRoomId, roomId int32) (has bool, err error) {
+	var (
+		args = proto.MovArg{UserId: userId, Seq: seq, OldRoomId: oldRoomId, RoomId: roomId}
+		reply = proto.MovReply{}
+		client *xrpc.Clients
+	)
+	if client, err = getRouterByUID(userId); err != nil {
+		return
+	}
+	if err = client.Call(routerServiceMov, &args, &reply); err != nil {
+		log.Error("c.Call(\"%s\",\"%v\") error(%v)", routerServiceMov, args, err)
+	} else {
+		has = reply.Has
+	}
+	return
+}
+
+func userSession(userId int64) (us *proto.UserSession, err error) {
+	var (
+		args = proto.UserSessionArg{UserId: userId}
+		reply = proto.UserSessionReply{}
+		client *xrpc.Clients
+	)
+	if client, err = getRouterByUID(userId); err != nil {
+		return
+	}
+	if err = client.Call(routerServiceUserSession, &args, &reply); err != nil {
+		log.Error("c.Call(\"%s\",\"%v\") error(%v)", routerServiceUserSession, args, err)
+	} else {
+		us = reply.UserSession
 	}
 	return
 }

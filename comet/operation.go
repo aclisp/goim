@@ -21,6 +21,8 @@ type Operator interface {
 	Connect(*proto.Proto) (string, int32, time.Duration, error)
 	// Disconnect used for revoke the subkey.
 	Disconnect(string, int32) error
+	// ChangeRoom changes from old roomid to new roomid for the subkey.
+	ChangeRoom(string, int32, int32) error
 }
 
 type DefaultOperator struct {
@@ -88,6 +90,20 @@ func (operator *DefaultOperator) Disconnect(key string, rid int32) (err error) {
 	}
 	if !has {
 		log.Warn("disconnect key: \"%s\" not exists", key)
+	}
+	return
+}
+
+func (operator *DefaultOperator) ChangeRoom(key string, orid int32, rid int32) (err error) {
+	var has bool
+	if orid == rid {
+		return
+	}
+	if has, err = changeRoom(key, orid, rid); err != nil {
+		return
+	}
+	if !has {
+		log.Warn("change room key: \"%s\" not exists", key)
 	}
 	return
 }
