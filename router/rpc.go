@@ -152,9 +152,10 @@ func (r *RouterRPC) RoomCount(arg *proto.RoomCountArg, reply *proto.RoomCountRep
 func (r *RouterRPC) AllRoomCount(arg *proto.NoArg, reply *proto.AllRoomCountReply) error {
 	var (
 		bucket        *Bucket
-		roomId, count int32
+		roomId        int64
+		count         int32
 	)
-	reply.Counter = make(map[int32]int32)
+	reply.Counter = make(map[int64]int32)
 	for _, bucket = range r.Buckets {
 		for roomId, count = range bucket.AllRoomCount() {
 			reply.Counter[roomId] += count

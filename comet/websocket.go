@@ -156,16 +156,16 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 		} else if p.Operation == define.OP_ROOM_CHANGE {
 			var ret int
 			var msg string
-			if rid, err := strconv.ParseInt(string(p.Body), 10, 32); err != nil {
+			if rid, err := strconv.ParseInt(string(p.Body), 10, 64); err != nil {
 				ret = 1
 				msg = fmt.Sprintf("invalid roomid: %s", p.Body)
-			} else if orid, err := b.Change(key, int32(rid)); err != nil {
+			} else if orid, err := b.Change(key, rid); err != nil {
 				ret = 2
 				msg = fmt.Sprintf("change roomid %d->%d err: %v", orid, rid, err)
 			} else {
 				ret = 0
 				msg = fmt.Sprintf("change roomid %d->%d ok", orid, rid)
-				server.operator.ChangeRoom(key, orid, int32(rid))
+				server.operator.ChangeRoom(key, orid, rid)
 			}
 			p.Body = []byte(fmt.Sprintf(`{"ret":%d,"msg":%q}`, ret, msg))
 			p.Operation = define.OP_ROOM_CHANGE_REPLY
@@ -249,7 +249,7 @@ failed:
 	return
 }
 
-func (server *Server) authWebsocket(conn *websocket.Conn, p *proto.Proto) (key string, rid int32, heartbeat time.Duration, err error) {
+func (server *Server) authWebsocket(conn *websocket.Conn, p *proto.Proto) (key string, rid int64, heartbeat time.Duration, err error) {
 	if err = p.ReadWebsocket(conn); err != nil {
 		return
 	}

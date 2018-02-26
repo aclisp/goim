@@ -77,7 +77,7 @@ func getRouterNode(userID int64) string {
 	return routerRing.Hash(strconv.FormatInt(userID, 10))
 }
 
-func connect(userID int64, server, roomId int32) (seq int32, err error) {
+func connect(userID int64, server int32, roomId int64) (seq int32, err error) {
 	var (
 		args   = proto.PutArg{UserId: userID, Server: server, RoomId: roomId}
 		reply  = proto.PutReply{}
@@ -94,7 +94,7 @@ func connect(userID int64, server, roomId int32) (seq int32, err error) {
 	return
 }
 
-func disconnect(userID int64, seq, roomId int32) (has bool, err error) {
+func disconnect(userID int64, seq int32, roomId int64) (has bool, err error) {
 	var (
 		args   = proto.DelArg{UserId: userID, Seq: seq, RoomId: roomId}
 		reply  = proto.DelReply{}
@@ -111,7 +111,7 @@ func disconnect(userID int64, seq, roomId int32) (has bool, err error) {
 	return
 }
 
-func changeRoom(userId int64, seq, oldRoomId, roomId int32) (has bool, err error) {
+func changeRoom(userId int64, seq int32, oldRoomId, roomId int64) (has bool, err error) {
 	var (
 		args = proto.MovArg{UserId: userId, Seq: seq, OldRoomId: oldRoomId, RoomId: roomId}
 		reply = proto.MovReply{}
@@ -159,7 +159,7 @@ func delServer(server int32) (err error) {
 	return
 }
 
-func allRoomCount(client *xrpc.Clients) (counter map[int32]int32, err error) {
+func allRoomCount(client *xrpc.Clients) (counter map[int64]int32, err error) {
 	var (
 		args  = proto.NoArg{}
 		reply = proto.AllRoomCountReply{}

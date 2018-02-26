@@ -3,7 +3,7 @@ package proto
 type PutArg struct {
 	UserId int64
 	Server int32
-	RoomId int32
+	RoomId int64
 }
 
 type PutReply struct {
@@ -13,7 +13,7 @@ type PutReply struct {
 type DelArg struct {
 	UserId int64
 	Seq    int32
-	RoomId int32
+	RoomId int64
 }
 
 type DelReply struct {
@@ -23,8 +23,8 @@ type DelReply struct {
 type MovArg struct {
 	UserId    int64
 	Seq       int32
-	OldRoomId int32
-	RoomId    int32
+	OldRoomId int64
+	RoomId    int64
 }
 
 type MovReply struct {
@@ -63,7 +63,7 @@ type CountReply struct {
 }
 
 type RoomCountArg struct {
-	RoomId int32
+	RoomId int64
 }
 
 type RoomCountReply struct {
@@ -71,7 +71,7 @@ type RoomCountReply struct {
 }
 
 type AllRoomCountReply struct {
-	Counter map[int32]int32
+	Counter map[int64]int32
 }
 
 type AllServerCountReply struct {
@@ -95,7 +95,7 @@ type UserSession struct {
 	Count   int32
 	Seq     int32
 	Servers map[int32]int32
-	Rooms   map[int32]map[int32]int32
+	Rooms   map[int64]map[int32]int32
 }
 
 type UserSessionReply struct {

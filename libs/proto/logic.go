@@ -7,12 +7,12 @@ type ConnArg struct {
 
 type ConnReply struct {
 	Key    string
-	RoomId int32
+	RoomId int64
 }
 
 type DisconnArg struct {
 	Key    string
-	RoomId int32
+	RoomId int64
 }
 
 type DisconnReply struct {
@@ -21,8 +21,8 @@ type DisconnReply struct {
 
 type ChangeRoomArg struct {
 	Key       string
-	OldRoomId int32
-	RoomId    int32
+	OldRoomId int64
+	RoomId    int64
 }
 
 type ChangeRoomReply struct {

@@ -42,10 +42,10 @@ type BoardcastArg struct {
 }
 
 type BoardcastRoomArg struct {
-	RoomId int32
+	RoomId int64
 	P      Proto
 }
 
 type RoomsReply struct {
-	RoomIds map[int32]struct{}
+	RoomIds map[int64]struct{}
 }

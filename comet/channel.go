@@ -7,7 +7,7 @@ import (
 
 // Channel used by message pusher send msg to write goroutine.
 type Channel struct {
-	RoomId   int32
+	RoomId   int64
 	CliProto Ring
 	signal   chan *proto.Proto
 	Writer   bufio.Writer
@@ -16,7 +16,7 @@ type Channel struct {
 	Prev     *Channel
 }
 
-func NewChannel(cli, svr int, rid int32) *Channel {
+func NewChannel(cli, svr int, rid int64) *Channel {
 	c := new(Channel)
 	c.RoomId = rid
 	c.CliProto.Init(cli)

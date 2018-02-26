@@ -6,7 +6,7 @@ import (
 )
 
 type Room struct {
-	id     int32
+	id     int64
 	rLock  sync.RWMutex
 	next   *Channel
 	drop   bool
@@ -14,7 +14,7 @@ type Room struct {
 }
 
 // NewRoom new a room struct, store channel room info.
-func NewRoom(id int32) (r *Room) {
+func NewRoom(id int64) (r *Room) {
 	r = new(Room)
 	r.id = id
 	r.drop = false

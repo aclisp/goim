@@ -45,7 +45,7 @@ func InitLogicRpc(addrs []string) (err error) {
 	return
 }
 
-func connect(p *proto.Proto) (key string, rid int32, heartbeat time.Duration, err error) {
+func connect(p *proto.Proto) (key string, rid int64, heartbeat time.Duration, err error) {
 	var (
 		arg   = proto.ConnArg{Token: string(p.Body), Server: Conf.ServerId}
 		reply = proto.ConnReply{}
@@ -60,7 +60,7 @@ func connect(p *proto.Proto) (key string, rid int32, heartbeat time.Duration, er
 	return
 }
 
-func disconnect(key string, roomId int32) (has bool, err error) {
+func disconnect(key string, roomId int64) (has bool, err error) {
 	var (
 		arg   = proto.DisconnArg{Key: key, RoomId: roomId}
 		reply = proto.DisconnReply{}
@@ -73,7 +73,7 @@ func disconnect(key string, roomId int32) (has bool, err error) {
 	return
 }
 
-func changeRoom(key string, orid int32, rid int32) (has bool, err error) {
+func changeRoom(key string, orid int64, rid int64) (has bool, err error) {
 	var (
 		arg   = proto.ChangeRoomArg{Key: key, OldRoomId: orid, RoomId: rid}
 		reply = proto.ChangeRoomReply{}

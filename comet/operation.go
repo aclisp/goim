@@ -18,11 +18,11 @@ type Operator interface {
 	// Operate process the common operation such as send message etc.
 	Operate(*proto.Proto) error
 	// Connect used for auth user and return a subkey, roomid, hearbeat.
-	Connect(*proto.Proto) (string, int32, time.Duration, error)
+	Connect(*proto.Proto) (string, int64, time.Duration, error)
 	// Disconnect used for revoke the subkey.
-	Disconnect(string, int32) error
+	Disconnect(string, int64) error
 	// ChangeRoom changes from old roomid to new roomid for the subkey.
-	ChangeRoom(string, int32, int32) error
+	ChangeRoom(string, int64, int64) error
 }
 
 type DefaultOperator struct {
@@ -78,12 +78,12 @@ func (operator *DefaultOperator) Operate(p *proto.Proto) error {
 	return nil
 }
 
-func (operator *DefaultOperator) Connect(p *proto.Proto) (key string, rid int32, heartbeat time.Duration, err error) {
+func (operator *DefaultOperator) Connect(p *proto.Proto) (key string, rid int64, heartbeat time.Duration, err error) {
 	key, rid, heartbeat, err = connect(p)
 	return
 }
 
-func (operator *DefaultOperator) Disconnect(key string, rid int32) (err error) {
+func (operator *DefaultOperator) Disconnect(key string, rid int64) (err error) {
 	var has bool
 	if has, err = disconnect(key, rid); err != nil {
 		return
@@ -94,7 +94,7 @@ func (operator *DefaultOperator) Disconnect(key string, rid int32) (err error) {
 	return
 }
 
-func (operator *DefaultOperator) ChangeRoom(key string, orid int32, rid int32) (err error) {
+func (operator *DefaultOperator) ChangeRoom(key string, orid int64, rid int64) (err error) {
 	var has bool
 	if orid == rid {
 		return

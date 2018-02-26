@@ -12,7 +12,7 @@ type Bucket struct {
 	server            int                       // session server map init num
 	session           int                       // bucket session init num
 	sessions          map[int64]*Session        // userid->sessions
-	roomCounter       map[int32]int32           // roomid->count
+	roomCounter       map[int64]int32           // roomid->count
 	serverCounter     map[int32]int32           // server->count
 	userServerCounter map[int32]map[int64]int32 // serverid->userid count
 	cleaner           *Cleaner                  // bucket map cleaner
@@ -22,7 +22,7 @@ type Bucket struct {
 func NewBucket(session, server, cleaner int) *Bucket {
 	b := new(Bucket)
 	b.sessions = make(map[int64]*Session, session)
-	b.roomCounter = make(map[int32]int32)
+	b.roomCounter = make(map[int64]int32)
 	b.serverCounter = make(map[int32]int32)
 	b.userServerCounter = make(map[int32]map[int64]int32)
 	b.cleaner = NewCleaner(cleaner)
@@ -33,7 +33,7 @@ func NewBucket(session, server, cleaner int) *Bucket {
 }
 
 // counter incr or decr counter.
-func (b *Bucket) counter(userId int64, server int32, roomId int32, incr bool) {
+func (b *Bucket) counter(userId int64, server int32, roomId int64, incr bool) {
 	var (
 		sm map[int64]int32
 		v  int32
@@ -61,7 +61,7 @@ func (b *Bucket) counter(userId int64, server int32, roomId int32, incr bool) {
 	}
 }
 
-func (b *Bucket) counterRoom(userId int64, server, oldRoomId, roomId int32) {
+func (b *Bucket) counterRoom(userId int64, server int32, oldRoomId, roomId int64) {
 	if oldRoomId == roomId {
 		return
 	}
@@ -70,7 +70,7 @@ func (b *Bucket) counterRoom(userId int64, server, oldRoomId, roomId int32) {
 }
 
 // Put put a channel according with user id.
-func (b *Bucket) Put(userId int64, server int32, roomId int32) (seq int32) {
+func (b *Bucket) Put(userId int64, server int32, roomId int64) (seq int32) {
 	var (
 		s  *Session
 		ok bool
@@ -115,7 +115,7 @@ func (b *Bucket) GetAll() (userIds []int64, seqs [][]int32, servers [][]int32) {
 }
 
 // Del delete the channel by sub key.
-func (b *Bucket) Del(userId int64, seq int32, roomId int32) (ok bool) {
+func (b *Bucket) Del(userId int64, seq int32, roomId int64) (ok bool) {
 	var (
 		s          *Session
 		server     int32
@@ -146,7 +146,7 @@ func (b *Bucket) Del(userId int64, seq int32, roomId int32) (ok bool) {
 }
 
 // Mov moves the channel from oldRoomId to roomId
-func (b *Bucket) Mov(userId int64, seq int32, oldRoomId int32, roomId int32) (ok bool) {
+func (b *Bucket) Mov(userId int64, seq int32, oldRoomId int64, roomId int64) (ok bool) {
 	var (
 		s      *Session
 		server int32
@@ -165,10 +165,10 @@ func (b *Bucket) Mov(userId int64, seq int32, oldRoomId int32, roomId int32) (ok
 
 func (b *Bucket) DelServer(server int32) {
 	var (
-		roomCounter       = make(map[int32]int32)
+		roomCounter       = make(map[int64]int32)
 		servers           map[int32]int32
 		userServerCounter map[int64]int32
-		roomId            int32
+		roomId            int64
 		count             int32
 		userId            int64
 		s                 *Session
@@ -199,7 +199,7 @@ func (b *Bucket) DelServer(server int32) {
 	return
 }
 
-func (b *Bucket) count(roomId int32) (count int32) {
+func (b *Bucket) count(roomId int64) (count int32) {
 	b.bLock.RLock()
 	count = b.roomCounter[roomId]
 	b.bLock.RUnlock()
@@ -211,15 +211,16 @@ func (b *Bucket) Count() (count int32) {
 	return
 }
 
-func (b *Bucket) RoomCount(roomId int32) (count int32) {
+func (b *Bucket) RoomCount(roomId int64) (count int32) {
 	count = b.count(roomId)
 	return
 }
 
-func (b *Bucket) AllRoomCount() (roomCounter map[int32]int32) {
-	var roomId, count int32
+func (b *Bucket) AllRoomCount() (roomCounter map[int64]int32) {
+	var roomId int64
+	var count int32
 	b.bLock.RLock()
-	roomCounter = make(map[int32]int32, len(b.roomCounter))
+	roomCounter = make(map[int64]int32, len(b.roomCounter))
 	for roomId, count = range b.roomCounter {
 		if count > 0 {
 			roomCounter[roomId] = count

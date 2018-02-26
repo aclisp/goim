@@ -8,7 +8,7 @@ import (
 
 // developer could implement "Auth" interface for decide how get userId, or roomId
 type Auther interface {
-	Auth(token string) (userId int64, roomId int32)
+	Auth(token string) (userId int64, roomId int64)
 }
 
 type DefaultAuther struct {
@@ -18,7 +18,7 @@ func NewDefaultAuther() *DefaultAuther {
 	return &DefaultAuther{}
 }
 
-func (a *DefaultAuther) Auth(token string) (userId int64, roomId int32) {
+func (a *DefaultAuther) Auth(token string) (userId int64, roomId int64) {
 	log.Info("Auth token is %s", token)
 	var err error
 	userId = 0

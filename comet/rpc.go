@@ -138,9 +138,9 @@ func (this *PushRPC) BroadcastRoom(arg *proto.BoardcastRoomArg, reply *proto.NoR
 
 func (this *PushRPC) Rooms(arg *proto.NoArg, reply *proto.RoomsReply) (err error) {
 	var (
-		roomId  int32
+		roomId  int64
 		bucket  *Bucket
-		roomIds = make(map[int32]struct{})
+		roomIds = make(map[int64]struct{})
 	)
 	for _, bucket = range DefaultServer.Buckets {
 		for roomId, _ = range bucket.Rooms() {

@@ -178,7 +178,7 @@ func PushRoom(w http.ResponseWriter, r *http.Request) {
 	var (
 		bodyBytes []byte
 		body      string
-		rid       int
+		rid       int64
 		err       error
 		param     = r.URL.Query()
 		res       = map[string]interface{}{"ret": OK}
@@ -193,12 +193,12 @@ func PushRoom(w http.ResponseWriter, r *http.Request) {
 	ridStr := param.Get("rid")
 	enable, _ := strconv.ParseBool(param.Get("ensure"))
 	// push room
-	if rid, err = strconv.Atoi(ridStr); err != nil {
+	if rid, err = strconv.ParseInt(ridStr, 10, 64); err != nil {
 		log.Error("strconv.Atoi(\"%s\") error(%v)", ridStr, err)
 		res["ret"] = InternalErr
 		return
 	}
-	if err = broadcastRoomKafka(int32(rid), bodyBytes, enable); err != nil {
+	if err = broadcastRoomKafka(rid, bodyBytes, enable); err != nil {
 		log.Error("broadcastRoomKafka(\"%s\",\"%s\",\"%d\") error(%s)", rid, body, enable, err)
 		res["ret"] = InternalErr
 		return
@@ -236,7 +236,7 @@ func PushAll(w http.ResponseWriter, r *http.Request) {
 }
 
 type RoomCounter struct {
-	RoomId int32
+	RoomId int64
 	Count  int32
 }
 

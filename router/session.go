@@ -5,14 +5,14 @@ import "goim/libs/define"
 type Session struct {
 	seq     int32
 	servers map[int32]int32           // seq:server
-	rooms   map[int32]map[int32]int32 // roomid:seq:server with specified room id
+	rooms   map[int64]map[int32]int32 // roomid:seq:server with specified room id
 }
 
 // NewSession new a session struct. store the seq and serverid.
 func NewSession(server int) *Session {
 	s := new(Session)
 	s.servers = make(map[int32]int32, server)
-	s.rooms = make(map[int32]map[int32]int32)
+	s.rooms = make(map[int64]map[int32]int32)
 	s.seq = 0
 	return s
 }
@@ -30,7 +30,7 @@ func (s *Session) Put(server int32) (seq int32) {
 }
 
 // PutRoom put a session in a room according with subkey.
-func (s *Session) PutRoom(server int32, roomId int32) (seq int32) {
+func (s *Session) PutRoom(server int32, roomId int64) (seq int32) {
 	var (
 		ok   bool
 		room map[int32]int32
@@ -69,7 +69,7 @@ func (s *Session) Del(seq int32) (has, empty bool, server int32) {
 }
 
 // DelRoom delete the session and room by subkey.
-func (s *Session) DelRoom(seq int32, roomId int32) (has, empty bool, server int32) {
+func (s *Session) DelRoom(seq int32, roomId int64) (has, empty bool, server int32) {
 	var (
 		ok   bool
 		room map[int32]int32
@@ -85,7 +85,7 @@ func (s *Session) DelRoom(seq int32, roomId int32) (has, empty bool, server int3
 }
 
 // MovRoom keep the session, but move room from old to new.
-func (s *Session) MovRoom(seq int32, oldRoomId int32, roomId int32) (has bool, server int32) {
+func (s *Session) MovRoom(seq int32, oldRoomId int64, roomId int64) (has bool, server int32) {
 	var (
 		ok   bool
 		room map[int32]int32

@@ -10,7 +10,7 @@ const (
 )
 
 var (
-	RoomCountMap   = make(map[int32]int32) // roomid:count
+	RoomCountMap   = make(map[int64]int32) // roomid:count
 	ServerCountMap = make(map[int32]int32) // server:count
 )
 
@@ -18,24 +18,26 @@ func MergeCount() {
 	var (
 		c                     *xrpc.Clients
 		err                   error
-		roomId, server, count int32
-		counter               map[int32]int32
-		roomCount             = make(map[int32]int32)
+		roomId                int64
+		server, count         int32
+		roomCounter           map[int64]int32
+		roomCount             = make(map[int64]int32)
+		serverCounter         map[int32]int32
 		serverCount           = make(map[int32]int32)
 	)
 	// all comet nodes
 	for _, c = range routerServiceMap {
 		if c != nil {
-			if counter, err = allRoomCount(c); err != nil {
+			if roomCounter, err = allRoomCount(c); err != nil {
 				continue
 			}
-			for roomId, count = range counter {
+			for roomId, count = range roomCounter {
 				roomCount[roomId] += count
 			}
-			if counter, err = allServerCount(c); err != nil {
+			if serverCounter, err = allServerCount(c); err != nil {
 				continue
 			}
-			for server, count = range counter {
+			for server, count = range serverCounter {
 				serverCount[server] += count
 			}
 		}

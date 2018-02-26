@@ -20,7 +20,7 @@ type Bucket struct {
 	chs      map[string]*Channel // map sub key to a channel
 	boptions BucketOptions
 	// room
-	rooms       map[int32]*Room // bucket room channels
+	rooms       map[int64]*Room // bucket room channels
 	routines    []chan *proto.BoardcastRoomArg
 	routinesNum uint64
 }
@@ -32,7 +32,7 @@ func NewBucket(boptions BucketOptions) (b *Bucket) {
 	b.boptions = boptions
 
 	//room
-	b.rooms = make(map[int32]*Room, boptions.RoomSize)
+	b.rooms = make(map[int64]*Room, boptions.RoomSize)
 	b.routines = make([]chan *proto.BoardcastRoomArg, boptions.RoutineAmount)
 	for i := int64(0); i < boptions.RoutineAmount; i++ {
 		c := make(chan *proto.BoardcastRoomArg, boptions.RoutineSize)
@@ -64,7 +64,7 @@ func (b *Bucket) Put(key string, ch *Channel) (err error) {
 }
 
 // Change the channel's RoomId by sub key.
-func (b *Bucket) Change(key string, rid int32) (orid int32, err error) {
+func (b *Bucket) Change(key string, rid int64) (orid int64, err error) {
 	var (
 		ch   *Channel
 		room *Room
@@ -136,7 +136,7 @@ func (b *Bucket) Broadcast(p *proto.Proto) {
 }
 
 // Room get a room by roomid.
-func (b *Bucket) Room(rid int32) (room *Room) {
+func (b *Bucket) Room(rid int64) (room *Room) {
 	b.cLock.RLock()
 	room, _ = b.rooms[rid]
 	b.cLock.RUnlock()
@@ -144,7 +144,7 @@ func (b *Bucket) Room(rid int32) (room *Room) {
 }
 
 // DelRoom delete a room by roomid.
-func (b *Bucket) DelRoom(rid int32) {
+func (b *Bucket) DelRoom(rid int64) {
 	var room *Room
 	b.cLock.Lock()
 	if room, _ = b.rooms[rid]; room != nil {
@@ -164,12 +164,12 @@ func (b *Bucket) BroadcastRoom(arg *proto.BoardcastRoomArg) {
 }
 
 // Rooms get all room id where online number > 0.
-func (b *Bucket) Rooms() (res map[int32]struct{}) {
+func (b *Bucket) Rooms() (res map[int64]struct{}) {
 	var (
-		roomId int32
+		roomId int64
 		room   *Room
 	)
-	res = make(map[int32]struct{})
+	res = make(map[int64]struct{})
 	b.cLock.RLock()
 	for roomId, room = range b.rooms {
 		if room.Online > 0 {

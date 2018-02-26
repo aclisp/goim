@@ -172,7 +172,7 @@ func broadcast(msg []byte) {
 }
 
 // broadcastRoomBytes broadcast aggregation messages to room
-func broadcastRoomBytes(roomId int32, body []byte) {
+func broadcastRoomBytes(roomId int64, body []byte) {
 	var (
 		args     = proto.BoardcastRoomArg{P: proto.Proto{Ver: 0, Operation: define.OP_RAW, Body: body}, RoomId: roomId}
 		c        *Comet
@@ -193,7 +193,7 @@ func broadcastRoomBytes(roomId int32, body []byte) {
 	}
 }
 
-func roomsComet(c *xrpc.Clients) map[int32]struct{} {
+func roomsComet(c *xrpc.Clients) map[int64]struct{} {
 	var (
 		args  = proto.NoArg{}
 		reply = proto.RoomsReply{}

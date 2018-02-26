@@ -13,7 +13,7 @@ type pushArg struct {
 	ServerId int32
 	SubKeys  []string
 	Msg      []byte
-	RoomId   int32
+	RoomId   int64
 }
 
 var (
@@ -49,7 +49,7 @@ func push(msg []byte) (err error) {
 	case define.KAFKA_MESSAGE_BROADCAST:
 		broadcast(m.Msg)
 	case define.KAFKA_MESSAGE_BROADCAST_ROOM:
-		room := roomBucket.Get(int32(m.RoomId))
+		room := roomBucket.Get(m.RoomId)
 		if m.Ensure {
 			go room.EPush(0, define.OP_SEND_SMS_REPLY, m.Msg)
 		} else {

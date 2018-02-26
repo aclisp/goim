@@ -19,7 +19,7 @@ var roomBucket *RoomBucket
 
 type RoomBucket struct {
 	roomNum int
-	rooms   map[int32]*Room
+	rooms   map[int64]*Room
 	rwLock  sync.RWMutex
 	options RoomOptions
 	round   *Round
@@ -28,14 +28,14 @@ type RoomBucket struct {
 func InitRoomBucket(r *Round, options RoomOptions) {
 	roomBucket = &RoomBucket{
 		roomNum: 0,
-		rooms:   make(map[int32]*Room, roomMapCup),
+		rooms:   make(map[int64]*Room, roomMapCup),
 		rwLock:  sync.RWMutex{},
 		options: options,
 		round:   r,
 	}
 }
 
-func (this *RoomBucket) Get(roomId int32) (r *Room) {
+func (this *RoomBucket) Get(roomId int64) (r *Room) {
 	this.rwLock.Lock()
 	room, ok := this.rooms[roomId]
 	if !ok {
@@ -54,7 +54,7 @@ type RoomOptions struct {
 }
 
 type Room struct {
-	id    int32
+	id    int64
 	proto chan *proto.Proto
 }
 
@@ -63,7 +63,7 @@ var (
 )
 
 // NewRoom new a room struct, store channel room info.
-func NewRoom(id int32, t *itime.Timer, options RoomOptions) (r *Room) {
+func NewRoom(id int64, t *itime.Timer, options RoomOptions) (r *Room) {
 	r = new(Room)
 	r.id = id
 	r.proto = make(chan *proto.Proto, options.BatchNum*2)

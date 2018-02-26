@@ -78,16 +78,16 @@ func broadcastKafka(msg []byte) (err error) {
 	return
 }
 
-func broadcastRoomKafka(rid int32, msg []byte, ensure bool) (err error) {
+func broadcastRoomKafka(rid int64, msg []byte, ensure bool) (err error) {
 	var (
 		vBytes   []byte
-		ridBytes [4]byte
+		ridBytes [8]byte
 		v        = &proto.KafkaMsg{OP: define.KAFKA_MESSAGE_BROADCAST_ROOM, RoomId: rid, Msg: msg, Ensure: ensure}
 	)
 	if vBytes, err = json.Marshal(v); err != nil {
 		return
 	}
-	binary.BigEndian.PutInt32(ridBytes[:], rid)
+	binary.BigEndian.PutInt64(ridBytes[:], rid)
 	producer.Input() <- &sarama.ProducerMessage{Topic: KafkaPushsTopic, Key: sarama.ByteEncoder(ridBytes[:]), Value: sarama.ByteEncoder(vBytes)}
 	return
 }
