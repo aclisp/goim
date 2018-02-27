@@ -14,6 +14,8 @@ import (
 	log "github.com/thinkboy/log4go"
 	"strconv"
 	"fmt"
+	"strings"
+	"errors"
 )
 
 var upgrader = websocket.Upgrader{
@@ -156,7 +158,7 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 		} else if p.Operation == define.OP_ROOM_CHANGE {
 			var ret int
 			var msg string
-			if rid, err := strconv.ParseInt(string(p.Body), 10, 64); err != nil {
+			if rid, err := parseRoomId(string(p.Body)); err != nil {
 				ret = 1
 				msg = fmt.Sprintf("invalid roomid: %s", p.Body)
 			} else if orid, err := b.Change(key, rid); err != nil {
@@ -263,5 +265,27 @@ func (server *Server) authWebsocket(conn *websocket.Conn, p *proto.Proto) (key s
 	p.Body = emptyJSONBody
 	p.Operation = define.OP_AUTH_REPLY
 	err = p.WriteWebsocket(conn)
+	return
+}
+
+func parseRoomId(body string) (rid int64, err error) {
+	if len(body) < 2 {
+		err = errors.New("body is not json string")
+		return
+	}
+	body = body[1 : len(body)-1]
+	pair := strings.Split(body, "|")
+	if len(pair) < 2 {
+		err = errors.New("expect 'appid|roomid'")
+		return
+	}
+	var appid int64
+	if appid, err = strconv.ParseInt(pair[0], 10, 16); err != nil {
+		return
+	}
+	if rid, err = strconv.ParseInt(pair[1], 10, 48); err != nil {
+		return
+	}
+	rid = (appid << 48) | rid
 	return
 }

@@ -143,7 +143,7 @@
             'ver': 1,
             'op': 15,
             'seq': seq,
-            'body': roomid
+            'body': this.options.appid + '|' + roomid
         }));
         this.pending[seq] = {
             callback: callback
