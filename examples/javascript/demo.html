@@ -14,7 +14,9 @@
     <script src="client.js"></script>
     <script>
       var client = new TarsClient({
-          uid: '88889999',
+          appid: 10001,
+          uid: 88889999,
+          roomid: -1,
           notify: function(data) {
               alert('收到广播消息: ' + data.test);
           }

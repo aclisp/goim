@@ -89,8 +89,10 @@ func Push(w http.ResponseWriter, r *http.Request) {
 		subKeys   map[int32][]string
 		bodyBytes []byte
 		userId    int64
+		appId     int64
 		err       error
 		uidStr    = r.URL.Query().Get("uid")
+		appidStr  = r.URL.Query().Get("appid")
 		res       = map[string]interface{}{"ret": OK}
 	)
 	defer retPWrite(w, r, res, &body, time.Now())
@@ -100,11 +102,17 @@ func Push(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	body = string(bodyBytes)
-	if userId, err = strconv.ParseInt(uidStr, 10, 64); err != nil {
+	if userId, err = strconv.ParseInt(uidStr, 10, 48); err != nil {
 		log.Error("strconv.Atoi(\"%s\") error(%v)", uidStr, err)
 		res["ret"] = InternalErr
 		return
 	}
+	if appId, err = strconv.ParseInt(appidStr, 10, 16); err != nil {
+		log.Error("strconv.Atoi(\"%s\") error(%v)", appidStr, err)
+		res["ret"] = InternalErr
+		return
+	}
+	userId = (appId << 48) | userId
 	subKeys = genSubKey(userId)
 	for serverId, keys = range subKeys {
 		if err = mpushKafka(serverId, keys, bodyBytes); err != nil {
@@ -119,6 +127,7 @@ func Push(w http.ResponseWriter, r *http.Request) {
 type pushsBodyMsg struct {
 	Msg     json.RawMessage `json:"m"`
 	UserIds []int64         `json:"u"`
+	AppId   int16           `json:"a"`
 }
 
 func parsePushsBody(body []byte) (msg []byte, userIds []int64, err error) {
@@ -127,11 +136,13 @@ func parsePushsBody(body []byte) (msg []byte, userIds []int64, err error) {
 		return
 	}
 	msg = tmp.Msg
-	userIds = tmp.UserIds
+	for _, userId := range tmp.UserIds {
+		userIds = append(userIds, (int64(tmp.AppId)<<48)|userId)
+	}
 	return
 }
 
-// {"m":{"test":1},"u":"1,2,3"}
+// {"m":{"test":1},"u":"1,2,3","a":1}
 func Pushs(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Method Not Allowed", 405)
@@ -179,6 +190,7 @@ func PushRoom(w http.ResponseWriter, r *http.Request) {
 		bodyBytes []byte
 		body      string
 		rid       int64
+		appid     int64
 		err       error
 		param     = r.URL.Query()
 		res       = map[string]interface{}{"ret": OK}
@@ -192,12 +204,19 @@ func PushRoom(w http.ResponseWriter, r *http.Request) {
 	body = string(bodyBytes)
 	ridStr := param.Get("rid")
 	enable, _ := strconv.ParseBool(param.Get("ensure"))
+	appidStr := param.Get("appid")
 	// push room
-	if rid, err = strconv.ParseInt(ridStr, 10, 64); err != nil {
+	if rid, err = strconv.ParseInt(ridStr, 10, 48); err != nil {
 		log.Error("strconv.Atoi(\"%s\") error(%v)", ridStr, err)
 		res["ret"] = InternalErr
 		return
 	}
+	if appid, err = strconv.ParseInt(appidStr, 10, 16); err != nil {
+		log.Error("strconv.Atoi(\"%s\") error(%v)", appidStr, err)
+		res["ret"] = InternalErr
+		return
+	}
+	rid = (appid << 48) | rid
 	if err = broadcastRoomKafka(rid, bodyBytes, enable); err != nil {
 		log.Error("broadcastRoomKafka(\"%s\",\"%s\",\"%d\") error(%s)", rid, body, enable, err)
 		res["ret"] = InternalErr

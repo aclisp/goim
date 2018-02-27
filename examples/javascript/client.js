@@ -92,7 +92,7 @@
                     'ver': 1,
                     'op': 7,
                     'seq': self.nextCallid(),
-                    'body': self.options.uid
+                    'body': self.options.appid + '|' + self.options.uid + '|' + self.options.roomid
                 }));
             }
 
