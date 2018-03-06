@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package YYLiteApp.AttentionSrv;
+
+message PQueryUserAttentionListReq {
+    uint32 Uid = 1;
+    string AppData = 2;
+    map<string, string> Extend = 3;
+}
+
+message PQueryUserAttentionListRsp {
+    uint32 Result = 1;
+    uint32 Uid = 2;
+    string AppData = 3;
+    map<uint32, string> Attentionlist = 4;
+    map<string, string> Extend = 5;
+}
+
+service AttentionObj {
+    rpc QueryUserAttentionList (PQueryUserAttentionListReq) returns (PQueryUserAttentionListRsp);
+}
