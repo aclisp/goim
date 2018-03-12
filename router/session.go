@@ -22,7 +22,7 @@ func NewSession(server int) *Session {
 	s := new(Session)
 	s.servers = make(map[int32]comet, server)
 	s.rooms = make(map[int64]map[int32]int32)
-	s.seq = 0
+	s.seq = int32((time.Now().UnixNano()/1000000) & 0x7fffffff)
 	return s
 }
 
