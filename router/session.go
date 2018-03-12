@@ -86,9 +86,10 @@ func (s *Session) Servers() (seqs []int32, servers []int32) {
 
 // Del delete the session by sub key.
 func (s *Session) Del(seq int32) (has, empty bool, server int32) {
-	if comet, has := s.servers[seq]; has {
+	var v comet
+	if v, has = s.servers[seq]; has {
 		delete(s.servers, seq)
-		server = comet.id
+		server = v.id
 	}
 	empty = (len(s.servers) == 0)
 	return
@@ -115,9 +116,10 @@ func (s *Session) MovRoom(seq int32, oldRoomId int64, roomId int64) (has bool, s
 	var (
 		ok   bool
 		room map[int32]int32
+		v comet
 	)
-	if comet, has := s.servers[seq]; has {
-		server = comet.id
+	if v, has = s.servers[seq]; has {
+		server = v.id
 	}
 	if oldRoomId == roomId {
 		return
