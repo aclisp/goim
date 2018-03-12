@@ -39,10 +39,10 @@ func (s *Session) Put(server int32, seqLast int32) (seq int32) {
 		seq = seqLast
 	}
 	now := uint32(time.Now().Unix())
-	if comet, has := s.servers[seq]; has {
+	if v, has := s.servers[seq]; has {
 		s.servers[seq] = comet{
 			id:        server,
-			birth:     comet.birth,
+			birth:     v.birth,
 			heartbeat: now,
 		}
 	} else {
@@ -73,14 +73,13 @@ func (s *Session) PutRoom(server int32, roomId int64, seqLast int32) (seq int32)
 func (s *Session) Servers() (seqs []int32, servers []int32) {
 	var (
 		i           = len(s.servers)
-		seq, server int32
 	)
 	seqs = make([]int32, i)
 	servers = make([]int32, i)
-	for seq, server = range s.servers {
+	for seq, comet := range s.servers {
 		i--
 		seqs[i] = seq
-		servers[i] = server
+		servers[i] = comet.id
 	}
 	return
 }
