@@ -18,6 +18,7 @@ var (
 	logicServiceConnect    = "RPC.Connect"
 	logicServiceDisconnect = "RPC.Disconnect"
 	logicServiceChangeRoom = "RPC.ChangeRoom"
+	logicServiceUpdate     = "RPC.Update"
 )
 
 func InitLogicRpc(addrs []string) (err error) {
@@ -82,5 +83,16 @@ func changeRoom(key string, orid int64, rid int64) (has bool, err error) {
 		log.Error("c.Call(\"%s\", \"%v\", &ret) error(%v)", logicServiceChangeRoom, arg, err)
 	}
 	has = reply.Has
+	return
+}
+
+func update(key string, roomId int64) (err error) {
+	var (
+		arg   = proto.UpdateArg{Key: key, RoomId: roomId, Server: Conf.ServerId}
+		reply = proto.NoReply{}
+	)
+	if err = logicRpcClient.Call(logicServiceUpdate, &arg, &reply); err != nil {
+		log.Error("c.Call(\"%s\", \"%v\", &ret) error(%v)", logicServiceUpdate, arg, err)
+	}
 	return
 }

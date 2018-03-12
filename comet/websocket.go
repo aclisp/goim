@@ -153,6 +153,7 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 		if p.Operation == define.OP_HEARTBEAT {
 			// heartbeat
 			tr.Set(trd, hb)
+			server.operator.Update(key, ch.RoomId)
 			p.Body = nil
 			p.Operation = define.OP_HEARTBEAT_REPLY
 		} else if p.Operation == define.OP_ROOM_CHANGE {

@@ -105,3 +105,21 @@ func (r *RPC) ChangeRoom(arg *proto.ChangeRoomArg, reply *proto.ChangeRoomReply)
 	reply.Has, err = changeRoom(uid, seq, arg.OldRoomId, arg.RoomId)
 	return
 }
+
+func (r *RPC) Update(arg *proto.UpdateArg, reply *proto.NoReply) (err error) {
+	if arg == nil {
+		err = ErrUpdateArgs
+		log.Error("Update() error(%v)", err)
+		return
+	}
+	var (
+		uid int64
+		seq int32
+	)
+	if uid, seq, err = decode(arg.Key); err != nil {
+		log.Error("decode(\"%s\") error(%s)", arg.Key, err)
+		return
+	}
+	err = update(uid, seq, arg.Server, arg.RoomId)
+	return
+}

@@ -62,7 +62,7 @@ func (r *RouterRPC) Ping(arg *proto.NoArg, reply *proto.NoReply) error {
 }
 
 func (r *RouterRPC) Put(arg *proto.PutArg, reply *proto.PutReply) error {
-	reply.Seq = r.bucket(arg.UserId).Put(arg.UserId, arg.Server, arg.RoomId)
+	reply.Seq = r.bucket(arg.UserId).Put(arg.UserId, arg.Server, arg.RoomId, arg.Seq)
 	return nil
 }
 

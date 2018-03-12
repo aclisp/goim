@@ -111,6 +111,23 @@ func disconnect(userID int64, seq int32, roomId int64) (has bool, err error) {
 	return
 }
 
+func update(userID int64, seq int32, server int32, roomId int64) (err error) {
+	var (
+		args   = proto.PutArg{UserId: userID, Server: server, RoomId: roomId, Seq: seq}
+		reply  = proto.PutReply{}
+		client *xrpc.Clients
+	)
+	if client, err = getRouterByUID(userID); err != nil {
+		return
+	}
+	if err = client.Call(routerServicePut, &args, &reply); err != nil {
+		log.Error("c.Call(\"%s\",\"%v\") error(%v)", routerServicePut, args, err)
+	} else {
+		seq = reply.Seq
+	}
+	return
+}
+
 func changeRoom(userId int64, seq int32, oldRoomId, roomId int64) (has bool, err error) {
 	var (
 		args = proto.MovArg{UserId: userId, Seq: seq, OldRoomId: oldRoomId, RoomId: roomId}
@@ -224,6 +241,7 @@ func getSubKeys(res chan *proto.MGetReply, serverId string, userIds []int64) {
 		if err = client.Call(routerServiceMGet, &args, &reply); err != nil {
 			log.Error("client.Call(\"%s\",\"%v\") error(%v)", routerServiceMGet, args, err)
 			res <- nil
+			return
 		}
 	}
 	res <- &reply

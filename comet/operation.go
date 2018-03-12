@@ -23,6 +23,8 @@ type Operator interface {
 	Disconnect(string, int64) error
 	// ChangeRoom changes from old roomid to new roomid for the subkey.
 	ChangeRoom(string, int64, int64) error
+	// Update keeps the latest online info for the subkey.
+	Update(string, int64) error
 }
 
 type DefaultOperator struct {
@@ -105,5 +107,10 @@ func (operator *DefaultOperator) ChangeRoom(key string, orid int64, rid int64) (
 	if !has {
 		log.Warn("change room key: \"%s\" not exists", key)
 	}
+	return
+}
+
+func (Operator *DefaultOperator) Update(key string, rid int64) (err error) {
+	err = update(key, rid)
 	return
 }

@@ -69,8 +69,8 @@ func (b *Bucket) counterRoom(userId int64, server int32, oldRoomId, roomId int64
 	b.roomCounter[roomId]++
 }
 
-// Put put a channel according with user id.
-func (b *Bucket) Put(userId int64, server int32, roomId int64) (seq int32) {
+// Put put a channel according with user id. update if seqLast is not zero.
+func (b *Bucket) Put(userId int64, server int32, roomId int64, seqLast int32) (seq int32) {
 	var (
 		s  *Session
 		ok bool
@@ -81,11 +81,13 @@ func (b *Bucket) Put(userId int64, server int32, roomId int64) (seq int32) {
 		b.sessions[userId] = s
 	}
 	if roomId != define.NoRoom {
-		seq = s.PutRoom(server, roomId)
+		seq = s.PutRoom(server, roomId, seqLast)
 	} else {
-		seq = s.Put(server)
+		seq = s.Put(server, seqLast)
 	}
-	b.counter(userId, server, roomId, true)
+	if seqLast == 0 || !ok {
+		b.counter(userId, server, roomId, true)
+	}
 	b.bLock.Unlock()
 	return
 }
@@ -253,11 +255,23 @@ func (b *Bucket) UserCount(userId int64) (count int32) {
 func (b *Bucket) UserSession(userId int64) (us *proto.UserSession) {
 	b.bLock.RLock()
 	if s, ok := b.sessions[userId]; ok {
+		servers := make(map[int32]struct {
+			Comet int32
+			Birth string
+			Heartbeat string
+		})
+		for seq, comet := range s.servers {
+			v := servers[seq]
+			v.Comet = comet.id
+			v.Birth = time.Unix(int64(comet.birth), 0).Format(time.Stamp)
+			v.Heartbeat = time.Unix(int64(comet.heartbeat), 0).Format(time.Stamp)
+			servers[seq] = v
+		}
 		us = &proto.UserSession{
 			UserId:  userId,
 			Count:   int32(s.Count()),
 			Seq:     s.seq,
-			Servers: s.servers,
+			Servers: servers,
 			Rooms:   s.rooms,
 		}
 	}

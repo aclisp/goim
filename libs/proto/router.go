@@ -4,6 +4,7 @@ type PutArg struct {
 	UserId int64
 	Server int32
 	RoomId int64
+	Seq    int32
 }
 
 type PutReply struct {
@@ -94,7 +95,11 @@ type UserSession struct {
 	UserId  int64
 	Count   int32
 	Seq     int32
-	Servers map[int32]int32
+	Servers map[int32]struct {
+		Comet     int32
+		Birth     string
+		Heartbeat string
+	}
 	Rooms   map[int64]map[int32]int32
 }
 

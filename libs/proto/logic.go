@@ -28,3 +28,9 @@ type ChangeRoomArg struct {
 type ChangeRoomReply struct {
 	Has bool
 }
+
+type UpdateArg struct {
+	Server int32
+	Key    string
+	RoomId int64
+}
