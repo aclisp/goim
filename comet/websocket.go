@@ -260,10 +260,12 @@ func (server *Server) authWebsocket(conn *websocket.Conn, p *proto.Proto) (key s
 		err = ErrOperation
 		return
 	}
-	if key, rid, heartbeat, err = server.operator.Connect(p); err != nil {
-		return
+	key, rid, heartbeat, err = server.operator.Connect(p)
+	if err == nil {
+		p.Body = emptyJSONBody
+	} else {
+		p.Body = []byte(fmt.Sprintf(`{"ret":%d,"msg":%q}`, 1, err.Error()))
 	}
-	p.Body = emptyJSONBody
 	p.Operation = define.OP_AUTH_REPLY
 	err = p.WriteWebsocket(conn)
 	return
