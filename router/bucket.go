@@ -72,8 +72,8 @@ func (b *Bucket) counterRoom(userId int64, server int32, oldRoomId, roomId int64
 // Put put a channel according with user id. update if seqLast is not zero.
 func (b *Bucket) Put(userId int64, server int32, roomId int64, seqLast int32) (seq int32) {
 	var (
-		s  *Session
-		ok bool
+		s       *Session
+		ok, has bool
 	)
 	b.bLock.Lock()
 	if s, ok = b.sessions[userId]; !ok {
@@ -81,11 +81,11 @@ func (b *Bucket) Put(userId int64, server int32, roomId int64, seqLast int32) (s
 		b.sessions[userId] = s
 	}
 	if roomId != define.NoRoom {
-		seq = s.PutRoom(server, roomId, seqLast)
+		seq, has = s.PutRoom(server, roomId, seqLast)
 	} else {
-		seq = s.Put(server, seqLast)
+		seq, has = s.Put(server, seqLast)
 	}
-	if seqLast == 0 || !ok {
+	if seqLast == 0 || !ok || !has {
 		b.counter(userId, server, roomId, true)
 	}
 	b.bLock.Unlock()

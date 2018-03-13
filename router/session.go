@@ -32,14 +32,15 @@ func (s *Session) nextSeq() int32 {
 }
 
 // Put put a session according with sub key.
-func (s *Session) Put(server int32, seqLast int32) (seq int32) {
+func (s *Session) Put(server int32, seqLast int32) (seq int32, has bool) {
 	if seqLast == 0 {
 		seq = s.nextSeq()
 	} else {
 		seq = seqLast
 	}
 	now := uint32(time.Now().Unix())
-	if v, has := s.servers[seq]; has {
+	var v comet
+	if v, has = s.servers[seq]; has {
 		s.servers[seq] = comet{
 			id:        server,
 			birth:     v.birth,
@@ -56,12 +57,12 @@ func (s *Session) Put(server int32, seqLast int32) (seq int32) {
 }
 
 // PutRoom put a session in a room according with subkey.
-func (s *Session) PutRoom(server int32, roomId int64, seqLast int32) (seq int32) {
+func (s *Session) PutRoom(server int32, roomId int64, seqLast int32) (seq int32, has bool) {
 	var (
 		ok   bool
 		room map[int32]int32
 	)
-	seq = s.Put(server, seqLast)
+	seq, has = s.Put(server, seqLast)
 	if room, ok = s.rooms[roomId]; !ok {
 		room = make(map[int32]int32)
 		s.rooms[roomId] = room
