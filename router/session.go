@@ -145,3 +145,20 @@ func (s *Session) MovRoom(seq int32, oldRoomId int64, roomId int64) (has bool, s
 func (s *Session) Count() int {
 	return len(s.servers)
 }
+
+func (s *Session) Dead(now uint32) (seqs []int32, rooms []int64) {
+	for seq, comet := range s.servers {
+		if now - comet.heartbeat > 6 * 60 {
+			var room int64 = define.NoRoom
+			for r, servers := range s.rooms {
+				if _, ok := servers[seq]; ok {
+					room = r
+					break
+				}
+			}
+			rooms = append(rooms, room)
+			seqs = append(seqs, seq)
+		}
+	}
+	return
+}

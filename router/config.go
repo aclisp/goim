@@ -54,7 +54,7 @@ func NewConfig() *Config {
 		Bucket:            runtime.NumCPU(),
 		Server:            5,
 		Cleaner:           1000,
-		BucketCleanPeriod: time.Hour * 1,
+		BucketCleanPeriod: time.Second * 30,
 		// session
 		Session:       1000,
 		SessionExpire: time.Hour * 1,

@@ -43,7 +43,7 @@
                     if (data.op === 8) {
                         auth = true;
                         heartbeat();
-                        heartbeatInterval = setInterval(heartbeat, 4 * 60 * 1000);
+                        heartbeatInterval = setInterval(heartbeat, 30 * 1000);
                     }
                     if (!auth) {
                         setTimeout(getAuth, delay);

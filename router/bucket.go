@@ -116,6 +116,31 @@ func (b *Bucket) GetAll() (userIds []int64, seqs [][]int32, servers [][]int32) {
 	return
 }
 
+func (b *Bucket) Tidy() {
+	now := uint32(time.Now().Unix())
+	type deadSession struct {
+		userId int64
+		seqs   []int32
+		rooms  []int64
+	}
+	var deadList []deadSession
+	b.bLock.RLock()
+	for userId, s:= range b.sessions {
+		seqs, rooms := s.Dead(now)
+		deadList = append(deadList, deadSession{
+			userId: userId,
+			seqs: seqs,
+			rooms: rooms,
+		})
+	}
+	b.bLock.RUnlock()
+	for _, v := range deadList {
+		for i := range v.seqs {
+			b.Del(v.userId, v.seqs[i], v.rooms[i])
+		}
+	}
+}
+
 // Del delete the channel by sub key.
 func (b *Bucket) Del(userId int64, seq int32, roomId int64) (ok bool) {
 	var (
@@ -307,5 +332,6 @@ func (b *Bucket) clean() {
 			continue
 		}
 		time.Sleep(Conf.BucketCleanPeriod)
+		b.Tidy()
 	}
 }
