@@ -261,12 +261,13 @@ func (server *Server) authWebsocket(conn *websocket.Conn, p *proto.Proto) (key s
 		return
 	}
 	key, rid, heartbeat, err = server.operator.Connect(p)
-	if err == nil {
-		p.Body = emptyJSONBody
-	} else {
-		p.Body = []byte(fmt.Sprintf(`{"ret":%d,"msg":%q}`, 1, err.Error()))
-	}
 	p.Operation = define.OP_AUTH_REPLY
+	if err != nil {
+		p.Body = []byte(fmt.Sprintf(`{"ret":%d,"msg":%q}`, 1, err.Error()))
+		p.WriteWebsocket(conn)
+		return
+	}
+	p.Body = emptyJSONBody
 	err = p.WriteWebsocket(conn)
 	return
 }

@@ -32,18 +32,20 @@ func NewDefaultAuther() *DefaultAuther {
 	transportFactory = thrift.NewTBufferedTransportFactory(8192)
 	transportFactory = thrift.NewTFramedTransportFactory(transportFactory)
 	transport, err = thrift.NewTSocket("127.0.0.1:12300")
-	if err != nil || transport == nil {
+	if err != nil {
 		log.Crashf("Error opening thrift socket: %v", err)
 	}
 	transport, err = transportFactory.GetTransport(transport)
-	if err != nil || transport == nil {
+	if err != nil {
 		log.Crashf("Error from transportFactory.GetTransport(): %v", err)
 	}
 	err = transport.Open()
 	if err != nil {
 		log.Crashf("Error opening transport: %v", err)
 	}
-	client = secuserinfo.NewSecuserinfoServiceClientFactory(transport, protocolFactory)
+	iprot := protocolFactory.GetProtocol(transport)
+	oprot := protocolFactory.GetProtocol(transport)
+	client = secuserinfo.NewSecuserinfoServiceClient(thrift.NewTStandardClient(iprot, oprot))
 	return &DefaultAuther{
 		client: client,
 	}
@@ -97,7 +99,7 @@ func (a *DefaultAuther) verify(ticket string, userId int64) (err error) {
 		return
 	}
 	if r.Rescode != 101 {  // SUI_VERIFY_SUCCESS = 101, // 票据验证成功
-		err = fmt.Errorf("got code %d: uid %d verify ticket %q", r.Rescode, userId, ticket)
+		err = fmt.Errorf("got code %d: uid %d verify ticket", r.Rescode, userId)
 	}
 	return
 }
