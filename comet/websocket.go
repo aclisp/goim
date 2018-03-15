@@ -265,10 +265,12 @@ func (server *Server) authWebsocket(conn *websocket.Conn, p *proto.Proto) (key s
 	if err != nil {
 		p.Body = []byte(fmt.Sprintf(`{"ret":%d,"msg":%q}`, 1, err.Error()))
 		p.WriteWebsocket(conn)
+		p.Body = nil
 		return
 	}
 	p.Body = okJSONBody
 	err = p.WriteWebsocket(conn)
+	p.Body = nil
 	return
 }
 

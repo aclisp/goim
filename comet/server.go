@@ -10,7 +10,7 @@ import (
 var (
 	maxInt        = 1<<31 - 1
 	emptyJSONBody = []byte("{}")
-	okJSONBody = []byte("{\"ret\":0}")
+	okJSONBody = []byte(`{"ret":0}`)
 )
 
 type ServerOptions struct {

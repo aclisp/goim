@@ -139,6 +139,9 @@ func (p *Proto) WriteTCP(wr *bufio.Writer) (err error) {
 }
 
 func (p *Proto) ReadWebsocket(wr *websocket.Conn) (err error) {
+	if p.Body != nil {
+		panic("memory pointed by p.Body may be overwritten after ReadWebsocket")
+	}
 	err = wr.ReadJSON(p)
 	return
 }
