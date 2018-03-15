@@ -88,11 +88,16 @@
             }
 
             function getAuth() {
+                var body = [self.options.appid, self.options.uid, self.options.roomid].join('|');
+                if (self.options.ticket) {
+                    body += '|';
+                    body += self.options.ticket;
+                }
                 ws.send(JSON.stringify({
                     'ver': 1,
                     'op': 7,
                     'seq': self.nextCallid(),
-                    'body': self.options.appid + '|' + self.options.uid + '|' + self.options.roomid
+                    'body': body
                 }));
             }
 

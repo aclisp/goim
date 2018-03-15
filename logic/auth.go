@@ -2,6 +2,7 @@ package main
 
 import (
 	"goim/libs/define"
+	"goim/libs/thriftpool"
 	"strconv"
 	log "github.com/thinkboy/log4go"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"goim/logic/secuserinfo"
 	"context"
 	"fmt"
+	"time"
 )
 
 // developer could implement "Auth" interface for decide how get userId, or roomId
@@ -17,38 +19,19 @@ type Auther interface {
 }
 
 type DefaultAuther struct {
-	client *secuserinfo.SecuserinfoServiceClient
+	pool thriftpool.Pool
 }
 
 func NewDefaultAuther() *DefaultAuther {
-	var (
-		protocolFactory  thrift.TProtocolFactory
-		transportFactory thrift.TTransportFactory
-		transport        thrift.TTransport
-		err              error
-		client           *secuserinfo.SecuserinfoServiceClient
-	)
-	protocolFactory = thrift.NewTBinaryProtocolFactoryDefault()
-	transportFactory = thrift.NewTBufferedTransportFactory(8192)
-	transportFactory = thrift.NewTFramedTransportFactory(transportFactory)
-	transport, err = thrift.NewTSocket("127.0.0.1:12300")
+	p, err := thriftpool.NewChannelPool(0, 10000, createNewThriftConn)
 	if err != nil {
-		log.Crashf("Error opening thrift socket: %v", err)
+		log.Crashf("can not create thrift connection pool for udb auth: %v", err)
 	}
-	transport, err = transportFactory.GetTransport(transport)
-	if err != nil {
-		log.Crashf("Error from transportFactory.GetTransport(): %v", err)
+	a := &DefaultAuther{
+		pool: p,
 	}
-	err = transport.Open()
-	if err != nil {
-		log.Crashf("Error opening transport: %v", err)
-	}
-	iprot := protocolFactory.GetProtocol(transport)
-	oprot := protocolFactory.GetProtocol(transport)
-	client = secuserinfo.NewSecuserinfoServiceClient(thrift.NewTStandardClient(iprot, oprot))
-	return &DefaultAuther{
-		client: client,
-	}
+	go a.ping()
+	return a
 }
 
 func (a *DefaultAuther) Auth(token string) (userId int64, roomId int64, err error) {
@@ -88,18 +71,80 @@ func (a *DefaultAuther) Auth(token string) (userId int64, roomId int64, err erro
 }
 
 func (a *DefaultAuther) verify(ticket string, userId int64) (err error) {
+	conn, err := a.pool.Get()
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+
+	client := conn.Client.(*secuserinfo.SecuserinfoServiceClient)
 	req := secuserinfo.NewVerifyAppTokenReqEx64()
 	req.Context = "nouse"
 	req.Yyuid = userId
 	req.Token = ticket
 	req.Appid = "5060"  // 客户端SDK用这段代码获取票据 String ticket = AuthSDK.getToken("5060");
 	req.EncodingType = 2  // BASE64_WITH_URL = 2,      // 最外层是URLs编码,其次是base64编码
-	r, err := a.client.LgSecuserinfoVerifyApptokenEx64(context.TODO(), req)
+	r, err := client.LgSecuserinfoVerifyApptokenEx64(context.TODO(), req)
 	if err != nil {
+		conn.MarkUnusable()
 		return
 	}
 	if r.Rescode != 101 {  // SUI_VERIFY_SUCCESS = 101, // 票据验证成功
 		err = fmt.Errorf("got code %d: uid %d verify ticket", r.Rescode, userId)
 	}
+	if r.Yyuid != req.Yyuid {
+		err = fmt.Errorf("uid mismatch: expect %d, got %d", req.Yyuid, r.Yyuid)
+	}
 	return
+}
+
+func createNewThriftConn() (*thriftpool.Conn, error) {
+	var (
+		protocolFactory  thrift.TProtocolFactory
+		transportFactory thrift.TTransportFactory
+		transport        thrift.TTransport
+		err              error
+		client           *secuserinfo.SecuserinfoServiceClient
+	)
+	protocolFactory = thrift.NewTBinaryProtocolFactoryDefault()
+	transportFactory = thrift.NewTBufferedTransportFactory(8192)
+	transportFactory = thrift.NewTFramedTransportFactory(transportFactory)
+	transport, err = thrift.NewTSocket("127.0.0.1:12300")
+	if err != nil {
+		return nil, fmt.Errorf("error new thrift transport: %v", err)
+	}
+	transport, err = transportFactory.GetTransport(transport)
+	if err != nil {
+		return nil, fmt.Errorf("error wrap thrift transport: %v", err)
+	}
+	err = transport.Open()
+	if err != nil {
+		return nil, fmt.Errorf("error open thrift transport: %v", err)
+	}
+	iprot := protocolFactory.GetProtocol(transport)
+	oprot := protocolFactory.GetProtocol(transport)
+	client = secuserinfo.NewSecuserinfoServiceClient(thrift.NewTStandardClient(iprot, oprot))
+	return &thriftpool.Conn{
+		Socket: transport,
+		Client: client,
+	}, nil
+}
+
+func (a *DefaultAuther) ping() {
+	for {
+		n := a.pool.Len()
+		for i := 0; i < n; i++ {
+			conn, err := a.pool.Get()
+			if err != nil {
+				break
+			}
+			client := conn.Client.(*secuserinfo.SecuserinfoServiceClient)
+			_, err = client.LgSecuserinfoPing(context.TODO(), 0)
+			if err != nil {
+				conn.MarkUnusable()
+			}
+			conn.Close()
+		}
+		time.Sleep(time.Minute * 10)
+	}
 }
