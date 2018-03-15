@@ -267,7 +267,7 @@ func (server *Server) authWebsocket(conn *websocket.Conn, p *proto.Proto) (key s
 		p.WriteWebsocket(conn)
 		return
 	}
-	p.Body = emptyJSONBody
+	p.Body = okJSONBody
 	err = p.WriteWebsocket(conn)
 	return
 }
