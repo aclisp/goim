@@ -80,8 +80,10 @@ Websocket（JSON Frame）
 
 ```
 上行 {"ver":1,"op":7,"seq":1,"body":"10001|88889999|-1"}
-下行 [{"ver":1,"op":8,"seq":1,"body":{}}]
+下行 [{"ver":1,"op":8,"seq":1,"body":{"ret":0}}]
 ```
+
+`ret` 0 成功，非 0 失败
 
 ### 心跳消息格式
 
@@ -112,6 +114,8 @@ Websocket（JSON Frame）
 上行 {"ver":1,"op":15,"seq":7,"body":"10001|20"}
 下行 [{"ver":1,"op":16,"seq":7,"body":{"ret":0,"msg":"change roomid -1-\u003e2815031242083270676 ok"}}]
 ```
+
+`ret` 0 成功，非 0 失败
 
 ### 推送消息格式
 
