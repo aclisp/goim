@@ -91,9 +91,11 @@ func (a *DefaultAuther) verify(ticket string, userId int64) (err error) {
 	}
 	if r.Rescode != 101 {  // SUI_VERIFY_SUCCESS = 101, // 票据验证成功
 		err = fmt.Errorf("got code %d: uid %d verify ticket", r.Rescode, userId)
+		return
 	}
 	if r.Yyuid != req.Yyuid {
 		err = fmt.Errorf("uid mismatch: expect %d, got %d", req.Yyuid, r.Yyuid)
+		return
 	}
 	return
 }
