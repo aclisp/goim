@@ -92,7 +92,7 @@ func (a *DefaultAuther) verify(ticket string, userId int64) (err error) {
 	req.Context = "nouse"
 	req.Yyuid = userId
 	req.Token = ticket
-	req.Appid = "5060"
+	req.Appid = "5060"  // 客户端SDK用这段代码获取票据 String ticket = AuthSDK.getToken("5060");
 	req.EncodingType = 2  // BASE64_WITH_URL = 2,      // 最外层是URLs编码,其次是base64编码
 	r, err := a.client.LgSecuserinfoVerifyApptokenEx64(context.TODO(), req)
 	if err != nil {
