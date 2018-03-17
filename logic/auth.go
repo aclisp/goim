@@ -36,12 +36,12 @@ func NewDefaultAuther() *DefaultAuther {
 }
 
 func (a *DefaultAuther) Auth(token string) (userId int64, roomId int64, err error) {
-	log.Info("Auth token is %s", token)
+	log.Info("Auth enter. token is %s", token)
 	var appId int64 = 0
 	userId = 0
 	roomId = define.NoRoom
 	defer func() {
-		log.Info("Auth appId is %v, userId is %v, roomId is %v", appId, userId, roomId)
+		log.Info("Auth return. appId is %v, userId is %v, roomId is %v", appId, userId, roomId)
 	}()
 	if len(token) < 2 {
 		return
@@ -91,6 +91,7 @@ func (a *DefaultAuther) verify(ticket string, userId int64) (err error) {
 		conn.Conn.Close()
 		// reconnect the socket
 		if conn.Conn, err = createNewThriftConn(); err != nil {
+			log.Error("Reconnect with createNewThriftConn failed, server down: %v", err)
 			conn.MarkUnusable()
 			return
 		}
@@ -98,6 +99,7 @@ func (a *DefaultAuther) verify(ticket string, userId int64) (err error) {
 		client = conn.Client.(*secuserinfo.SecuserinfoServiceClient)
 		r, err = client.LgSecuserinfoVerifyApptokenEx64(context.TODO(), req)
 		if err != nil {
+			log.Error("Failed after reconnect with createNewThriftConn: %v", err)
 			conn.MarkUnusable()
 			return
 		}
@@ -146,7 +148,9 @@ func createNewThriftConn() (*thriftpool.Conn, error) {
 }
 
 func (a *DefaultAuther) ping() {
+	var count int
 	for {
+		count = 0
 		n := a.pool.Len()
 		for i := 0; i < n; i++ {
 			conn, err := a.pool.Get()
@@ -156,9 +160,13 @@ func (a *DefaultAuther) ping() {
 			client := conn.Client.(*secuserinfo.SecuserinfoServiceClient)
 			_, err = client.LgSecuserinfoPing(context.TODO(), 0)
 			if err != nil {
+				count++
 				conn.MarkUnusable()
 			}
 			conn.Close()
+		}
+		if count > 0 {
+			log.Info("Removed %d stale thrift connection(s) out of %d in the pool", count, n)
 		}
 		time.Sleep(time.Minute * 10)
 	}
