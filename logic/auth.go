@@ -1,16 +1,17 @@
 package main
 
 import (
-	"goim/libs/define"
-	"goim/libs/thriftpool"
-	"strconv"
-	log "github.com/thinkboy/log4go"
-	"strings"
-	"git.apache.org/thrift.git/lib/go/thrift"
-	"goim/logic/secuserinfo"
 	"context"
 	"fmt"
+	"goim/libs/define"
+	"goim/libs/thriftpool"
+	"goim/logic/secuserinfo"
+	"strconv"
+	"strings"
 	"time"
+
+	"git.apache.org/thrift.git/lib/go/thrift"
+	log "github.com/thinkboy/log4go"
 )
 
 // developer could implement "Auth" interface for decide how get userId, or roomId
@@ -82,14 +83,26 @@ func (a *DefaultAuther) verify(ticket string, userId int64) (err error) {
 	req.Context = "nouse"
 	req.Yyuid = userId
 	req.Token = ticket
-	req.Appid = "5060"  // 客户端SDK用这段代码获取票据 String ticket = AuthSDK.getToken("5060");
-	req.EncodingType = 2  // BASE64_WITH_URL = 2,      // 最外层是URLs编码,其次是base64编码
+	req.Appid = "5060"   // 客户端SDK用这段代码获取票据 String ticket = AuthSDK.getToken("5060");
+	req.EncodingType = 2 // BASE64_WITH_URL = 2, // 最外层是URLs编码,其次是base64编码
 	r, err := client.LgSecuserinfoVerifyApptokenEx64(context.TODO(), req)
 	if err != nil {
-		conn.MarkUnusable()
-		return
+		// close the socket that failed
+		conn.Conn.Close()
+		// reconnect the socket
+		if conn.Conn, err = createNewThriftConn(); err != nil {
+			conn.MarkUnusable()
+			return
+		}
+		// retry on the newly connected socket
+		client = conn.Client.(*secuserinfo.SecuserinfoServiceClient)
+		r, err = client.LgSecuserinfoVerifyApptokenEx64(context.TODO(), req)
+		if err != nil {
+			conn.MarkUnusable()
+			return
+		}
 	}
-	if r.Rescode != 101 {  // SUI_VERIFY_SUCCESS = 101, // 票据验证成功
+	if r.Rescode != 101 { // SUI_VERIFY_SUCCESS = 101, // 票据验证成功
 		err = fmt.Errorf("got code %d: uid %d verify ticket", r.Rescode, userId)
 		return
 	}
