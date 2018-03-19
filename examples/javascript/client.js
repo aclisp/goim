@@ -28,7 +28,7 @@
         var heartbeatInterval;
 
         function connect() {
-            self.wsocket = new WebSocket('ws://183.3.211.40:8090/sub');
+            self.wsocket = new WebSocket('wss://test-goim.yy.com/sub');
             var ws = self.wsocket;
             var auth = false;
 

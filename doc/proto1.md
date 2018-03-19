@@ -6,7 +6,7 @@
 
 ### 请求 URL
 
-ws://183.3.211.40:8090/sub
+wss://test-goim.yy.com/sub
 
 ### 协议格式
 
@@ -131,28 +131,28 @@ Websocket（JSON Frame）
 
 ### 推送 URL
 
-http://183.3.211.40:7172
+http://test-goim.yy.com:7172
 
 ### 房间推送
 
 ```
-curl -d "{\"test\": 12345}" 'http://183.3.211.40:7172/1/push/room?rid=20&appid=10001'
+curl -d "{\"test\": 12345}" 'http://test-goim.yy.com:7172/1/push/room?rid=20&appid=10001'
 ``` 
 
 ### 广播
 
 ```
-curl -d "{\"test\": 12345}" 'http://183.3.211.40:7172/1/push/all'
+curl -d "{\"test\": 12345}" 'http://test-goim.yy.com:7172/1/push/all'
 ```
 
 ### 单人推送
 
 ```
-curl -d "{\"test\":12345}" 'http://183.3.211.40:7172/1/push?uid=88889999&appid=10001'
+curl -d "{\"test\":12345}" 'http://test-goim.yy.com:7172/1/push?uid=88889999&appid=10001'
 ```
 
 ### 单消息多人推送
 
 ```
-curl -d "{\"u\":[88889999,88889000],\"m\":{\"test\":12},\"a\":10001}" 'http://183.3.211.40:7172/1/pushs'
+curl -d "{\"u\":[88889999,88889000],\"m\":{\"test\":12},\"a\":10001}" 'http://test-goim.yy.com:7172/1/pushs'
 ```
