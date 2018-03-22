@@ -120,7 +120,7 @@ func (operator *DefaultOperator) ChangeRoom(key string, orid int64, rid int64) (
 	return
 }
 
-func (Operator *DefaultOperator) Update(key string, rid int64) (err error) {
+func (operator *DefaultOperator) Update(key string, rid int64) (err error) {
 	err = update(key, rid)
 	return
 }
