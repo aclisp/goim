@@ -6,7 +6,6 @@ import (
 	"runtime"
 
 	log "github.com/thinkboy/log4go"
-	"yytars/tars/servant"
 )
 
 var (
@@ -60,9 +59,7 @@ func main() {
 		Timer:        Conf.Timer,
 		TimerSize:    Conf.TimerSize,
 	})
-	operator := &DefaultOperator{
-		Comm: servant.NewCommunicator(),
-	}
+	operator := NewOperator()
 	DefaultServer = NewServer(buckets, round, operator, ServerOptions{
 		CliProto:         Conf.CliProto,
 		SvrProto:         Conf.SvrProto,

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	log "github.com/thinkboy/log4go"
-	"yytars/tars/servant"
+	"code.yy.com/yytars/goframework/tars/servant"
 	"context"
 	"encoding/base64"
 	"encoding/hex"
@@ -28,7 +28,17 @@ type Operator interface {
 }
 
 type DefaultOperator struct {
-	Comm *servant.Communicator
+	comm *servant.Communicator
+}
+
+func NewOperator() Operator {
+	// setup yytars communicator
+	// servant package init will be called first!
+	//     It should read tars config file during init.
+	comm := servant.NewPbCommunicator()
+	return &DefaultOperator{
+		comm: comm,
+	}
 }
 
 func (operator *DefaultOperator) Operate(p *proto.Proto) error {
@@ -60,7 +70,7 @@ func (operator *DefaultOperator) Operate(p *proto.Proto) error {
 		}
 		log.Info("rpc.req = \n%s", hex.Dump(rpcReqBuf))
 
-		rpcStub := operator.Comm.GetServantProxy(rpc.Obj)
+		rpcStub := operator.comm.GetServantProxy(rpc.Obj)
 		rpcResp, err := rpcStub.Taf_invoke(context.TODO(), 0, rpc.Func, rpcReqBuf, nil, nil)
 		if err != nil {
 			log.Error("rpc.invoke error: %v", err)
