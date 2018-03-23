@@ -12,4 +12,5 @@ var (
 	ErrDisconnectArgs = errors.New("disconnect rpc args error")
 	ErrChangeRoomArgs = errors.New("changeroom rpc args error")
 	ErrUpdateArgs     = errors.New("update rpc args error")
+	ErrRegisterArgs   = errors.New("register rpc args error")
 )

@@ -7,6 +7,8 @@ import (
 	"net/rpc"
 
 	log "github.com/thinkboy/log4go"
+	"sync"
+	"time"
 )
 
 func InitRPC(bs []*Bucket) (err error) {
@@ -14,6 +16,7 @@ func InitRPC(bs []*Bucket) (err error) {
 		network, addr string
 		c             = &RouterRPC{Buckets: bs, BucketIdx: int64(len(bs))}
 	)
+	c.servers = make(map[int32]serverInfo)
 	rpc.Register(c)
 	for i := 0; i < len(Conf.RPCAddrs); i++ {
 		log.Info("start listen rpc addr: \"%s\"", Conf.RPCAddrs[i])
@@ -23,6 +26,7 @@ func InitRPC(bs []*Bucket) (err error) {
 		}
 		go rpcListen(network, addr)
 	}
+	go c.CheckServer()
 	return
 }
 
@@ -46,6 +50,14 @@ func rpcListen(network, addr string) {
 type RouterRPC struct {
 	Buckets   []*Bucket
 	BucketIdx int64
+	servers   map[int32]serverInfo
+	serversL  sync.RWMutex
+}
+
+type serverInfo struct {
+	info      string
+	birth     uint32
+	heartbeat uint32
 }
 
 func (r *RouterRPC) bucket(userId int64) *Bucket {
@@ -83,7 +95,72 @@ func (r *RouterRPC) DelServer(arg *proto.DelServerArg, reply *proto.NoReply) err
 	for _, bucket = range r.Buckets {
 		bucket.DelServer(arg.Server)
 	}
+	r.serversL.Lock()
+	delete(r.servers, arg.Server)
+	r.serversL.Unlock()
 	return nil
+}
+
+func (r *RouterRPC) AddServer(arg *proto.RegisterArg, reply *proto.NoReply) error {
+	var (
+		v  serverInfo
+		ok bool
+		server = arg.Server
+	)
+	now := uint32(time.Now().Unix())
+	r.serversL.Lock()
+	if v, ok = r.servers[server]; ok {
+		r.servers[server] = serverInfo{
+			info:      arg.Info,
+			birth:     v.birth,
+			heartbeat: now,
+		}
+	} else {
+		r.servers[server] = serverInfo{
+			info:      arg.Info,
+			birth:     now,
+			heartbeat: now,
+		}
+	}
+	r.serversL.Unlock()
+	return nil
+}
+
+func (r *RouterRPC) GetAllServer(arg *proto.NoArg, reply *proto.GetAllServerReply) error {
+	servers := make(map[int32]struct {
+		Info      string
+		Birth     string
+		Heartbeat string
+	})
+	r.serversL.RLock()
+	for i, s := range r.servers {
+		v := servers[i]
+		v.Info = s.info
+		v.Birth = time.Unix(int64(s.birth), 0).Format(time.Stamp)
+		v.Heartbeat = time.Unix(int64(s.heartbeat), 0).Format(time.Stamp)
+		servers[i] = v
+	}
+	r.serversL.RUnlock()
+	reply.Servers = servers
+	return nil
+}
+
+func (r *RouterRPC) CheckServer() {
+	for {
+		now := uint32(time.Now().Unix())
+		dead := []int32{}
+		r.serversL.RLock()
+		for i, s := range r.servers {
+			if now - s.heartbeat > 10 {
+				dead = append(dead, i)
+			}
+		}
+		r.serversL.RUnlock()
+		for _, v := range dead {
+			r.DelServer(&proto.DelServerArg{Server: v}, nil)
+		}
+		time.Sleep(10 * time.Second)
+	}
 }
 
 func (r *RouterRPC) Get(arg *proto.GetArg, reply *proto.GetReply) error {

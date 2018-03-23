@@ -106,3 +106,11 @@ type UserSession struct {
 type UserSessionReply struct {
 	*UserSession
 }
+
+type GetAllServerReply struct {
+	Servers map[int32]struct {
+		Info      string
+		Birth     string
+		Heartbeat string
+	}
+}

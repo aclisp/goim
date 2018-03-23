@@ -34,3 +34,8 @@ type UpdateArg struct {
 	Key    string
 	RoomId int64
 }
+
+type RegisterArg struct {
+	Server int32
+	Info   string
+}

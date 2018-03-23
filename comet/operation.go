@@ -25,6 +25,8 @@ type Operator interface {
 	ChangeRoom(string, int64, int64) error
 	// Update keeps the latest online info for the subkey.
 	Update(string, int64) error
+	// Register this comet instance
+	Register() error
 }
 
 type DefaultOperator struct {
@@ -123,5 +125,10 @@ func (operator *DefaultOperator) ChangeRoom(key string, orid int64, rid int64) (
 
 func (operator *DefaultOperator) Update(key string, rid int64) (err error) {
 	err = update(key, rid)
+	return
+}
+
+func (Operator *DefaultOperator) Register() (err error ) {
+	err = register()
 	return
 }

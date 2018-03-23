@@ -126,3 +126,13 @@ func (r *RPC) Update(arg *proto.UpdateArg, reply *proto.NoReply) (err error) {
 	err = update(uid, seq, arg.Server, arg.RoomId)
 	return
 }
+
+func (r *RPC) Register(arg *proto.RegisterArg, reply *proto.NoReply) (err error) {
+	if arg == nil {
+		err = ErrRegisterArgs
+		log.Error("Register() error(%v)", err)
+		return
+	}
+	err = register(arg, reply)
+	return
+}

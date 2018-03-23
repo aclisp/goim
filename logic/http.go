@@ -25,6 +25,7 @@ func InitHTTP() (err error) {
 		httpServeMux.HandleFunc("/1/server/del", DelServer)
 		httpServeMux.HandleFunc("/1/count", Count)
 		httpServeMux.HandleFunc("/1/session", Session)
+		httpServeMux.HandleFunc("/1/list", List)
 		log.Info("start http listen:\"%s\"", Conf.HTTPAddrs[i])
 		if network, addr, err = inet.ParseNetwork(Conf.HTTPAddrs[i]); err != nil {
 			log.Error("inet.ParseNetwork() error(%v)", err)
@@ -286,6 +287,8 @@ func Count(w http.ResponseWriter, r *http.Request) {
 			d = append(d, &ServerCounter{Server: server, Count: count})
 		}
 		res["data"] = d
+		m, _ := allServerInfo()
+		res["ServerAddr"] = m
 	}
 	return
 }
@@ -313,6 +316,44 @@ func Session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	res["session"] = session
+	return
+}
+
+func List(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Method Not Allowed", 405)
+		return
+	}
+	type Session struct {
+		UserId int64
+		Seq    int32
+		Comet  int32
+	}
+	var (
+		res       = map[string]interface{}{"ret": OK}
+		nodes     []Sessions
+		data      = map[string][]Session{}
+	)
+	defer retWrite(w, r, res, time.Now())
+	nodes, _ = listUserSession()
+	for _, node := range nodes {
+		total := 0
+		if len(node.userIds) > 0 {
+			total = len(node.userIds) * len(node.seqs[0])
+		}
+		sessions := make([]Session, 0, total)
+		for i := range node.userIds {
+			for j := range node.seqs[i] {
+				sessions = append(sessions, Session{
+					UserId: node.userIds[i],
+					Seq:    node.seqs[i][j],
+					Comet:  node.servers[i][j],
+				})
+			}
+		}
+		data[node.node] = sessions
+	}
+	res["nodes"] = data
 	return
 }
 

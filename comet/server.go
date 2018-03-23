@@ -38,6 +38,7 @@ func NewServer(b []*Bucket, r *Round, o Operator, options ServerOptions) *Server
 	s.round = r
 	s.operator = o
 	s.Options = options
+	go s.Register()
 	return s
 }
 
@@ -47,4 +48,11 @@ func (server *Server) Bucket(subKey string) *Bucket {
 		log.Debug("\"%s\" hit channel bucket index: %d use cityhash", subKey, idx)
 	}
 	return server.Buckets[idx]
+}
+
+func (server *Server) Register() {
+	for {
+		server.operator.Register()
+		time.Sleep(1 * time.Second)
+	}
 }

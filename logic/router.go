@@ -23,6 +23,8 @@ const (
 	routerServiceDel            = "RouterRPC.Del"
 	routerServiceMov            = "RouterRPC.Mov"
 	routerServiceDelServer      = "RouterRPC.DelServer"
+	routerServiceAddServer      = "RouterRPC.AddServer"
+	routerServiceGetAllServer   = "RouterRPC.GetAllServer"
 	routerServiceAllRoomCount   = "RouterRPC.AllRoomCount"
 	routerServiceAllServerCount = "RouterRPC.AllServerCount"
 	routerServiceGet            = "RouterRPC.Get"
@@ -128,6 +130,32 @@ func update(userID int64, seq int32, server int32, roomId int64) (err error) {
 	return
 }
 
+func register(arg *proto.RegisterArg, reply *proto.NoReply) (err error) {
+	// register should be send to every router.
+	for _, client := range routerServiceMap {
+		if err = client.Call(routerServiceAddServer, arg, reply); err != nil {
+			log.Error("c.Call(\"%s\",\"%v\") error(%v)", routerServiceAddServer, arg, err)
+		}
+	}
+	return
+}
+
+func allServerInfo() (r *proto.GetAllServerReply, err error) {
+	var (
+		args  = proto.NoArg{}
+		reply = proto.GetAllServerReply{}
+	)
+	// allServerInfo could be get from any router.
+	for _, client := range routerServiceMap {
+		if err = client.Call(routerServiceGetAllServer, &args, &reply); err == nil {
+			r = &reply
+			return
+		}
+	}
+	log.Error("c.Call(\"%s\",\"%v\") error(%v)", routerServiceGetAllServer, args, err)
+	return
+}
+
 func changeRoom(userId int64, seq int32, oldRoomId, roomId int64) (has bool, err error) {
 	var (
 		args = proto.MovArg{UserId: userId, Seq: seq, OldRoomId: oldRoomId, RoomId: roomId}
@@ -158,6 +186,35 @@ func userSession(userId int64) (us *proto.UserSession, err error) {
 		log.Error("c.Call(\"%s\",\"%v\") error(%v)", routerServiceUserSession, args, err)
 	} else {
 		us = reply.UserSession
+	}
+	return
+}
+
+type Sessions struct {
+	node    string
+	userIds []int64
+	seqs    [][]int32
+	servers [][]int32
+}
+
+func listUserSession() (nodes []Sessions, err error) {
+	for node, client := range routerServiceMap {
+		sessions := Sessions{}
+		args     := proto.NoArg{}
+		reply    := proto.GetAllReply{}
+		if err = client.Call(routerServiceGetAll, &args, &reply); err != nil {
+			log.Error("c.Call(\"%s\",\"%v\") error(%v)", routerServiceGetAll, args, err)
+			continue
+		}
+		sessions.node = node
+		sessions.userIds = reply.UserIds
+		sessions.seqs = make([][]int32, 0, len(reply.Sessions))
+		sessions.servers = make([][]int32, 0, len(reply.Sessions))
+		for _, x := range reply.Sessions {
+			sessions.seqs = append(sessions.seqs, x.Seqs)
+			sessions.servers = append(sessions.servers, x.Servers)
+		}
+		nodes = append(nodes, sessions)
 	}
 	return
 }

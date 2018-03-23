@@ -7,6 +7,7 @@ import (
 	"time"
 
 	log "github.com/thinkboy/log4go"
+	"strings"
 )
 
 var (
@@ -19,6 +20,7 @@ var (
 	logicServiceDisconnect = "RPC.Disconnect"
 	logicServiceChangeRoom = "RPC.ChangeRoom"
 	logicServiceUpdate     = "RPC.Update"
+	logicServiceRegister   = "RPC.Register"
 )
 
 func InitLogicRpc(addrs []string) (err error) {
@@ -93,6 +95,17 @@ func update(key string, roomId int64) (err error) {
 	)
 	if err = logicRpcClient.Call(logicServiceUpdate, &arg, &reply); err != nil {
 		log.Error("c.Call(\"%s\", \"%v\", &ret) error(%v)", logicServiceUpdate, arg, err)
+	}
+	return
+}
+
+func register() (err error) {
+	var (
+		arg   = proto.RegisterArg{Server: Conf.ServerId, Info: strings.Join(Conf.WebsocketTLSBind, ",")}
+		reply = proto.NoReply{}
+	)
+	if err = logicRpcClient.Call(logicServiceRegister, &arg, &reply); err != nil {
+		log.Error("c.Call(\"%s\", \"%v\", &ret) error(%v)", logicServiceRegister, arg, err)
 	}
 	return
 }
