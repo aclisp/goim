@@ -51,6 +51,7 @@ func (operator *DefaultOperator) Operate(p *proto.Proto) error {
 			Obj string `json:"obj"`
 			Func string `json:"func"`
 			Req json.RawMessage `json:"req"`
+			Opt map[string]string `json:"opt"`
 		}
 		var rpc RPC
 		json.Unmarshal(p.Body, &rpc)
@@ -71,7 +72,7 @@ func (operator *DefaultOperator) Operate(p *proto.Proto) error {
 		log.Info("rpc.req = \n%s", hex.Dump(rpcReqBuf))
 
 		rpcStub := operator.comm.GetServantProxy(rpc.Obj)
-		rpcResp, err := rpcStub.Taf_invoke(context.TODO(), 0, rpc.Func, rpcReqBuf, nil, nil)
+		rpcResp, err := rpcStub.Taf_invoke(context.TODO(), 0, rpc.Func, rpcReqBuf, nil, rpc.Opt)
 		if err != nil {
 			log.Error("rpc.invoke error: %v", err)
 			return err

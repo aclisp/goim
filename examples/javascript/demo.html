@@ -40,6 +40,10 @@
               },
               service: 'YYLiteApp.AttentionSrv.AttentionObj@tcp -h 58.215.138.213 -p 22018 -t 6000',
               method: 'QueryUserAttentionList',
+              context: {
+                  uid: "1304934619",
+                  sid: "-1"
+              },
               callback: function(rsp) {
                   var note = rsp.Uid + " 的关注列表：\n\n";
                   for (var uid in rsp.Attentionlist) {

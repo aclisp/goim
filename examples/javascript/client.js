@@ -124,6 +124,7 @@
         var req = options.req;
         var service = options.service;
         var method = options.method;
+        var context = options.context;
         var callback = options.callback;
 
         var reqT = proto.lookupType(reqtype);
@@ -134,7 +135,8 @@
         this.send({
             obj: service,
             func: method,
-            req: bufferToString(reqB)
+            req: bufferToString(reqB),
+            opt: context
         }, seq);
         this.pending[seq] = {
             rspT: rspT,
