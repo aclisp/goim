@@ -26,7 +26,7 @@ func InitRPC(bs []*Bucket) (err error) {
 		}
 		go rpcListen(network, addr)
 	}
-	go c.CheckServer()
+	go c.checkServer()
 	return
 }
 
@@ -145,7 +145,7 @@ func (r *RouterRPC) GetAllServer(arg *proto.NoArg, reply *proto.GetAllServerRepl
 	return nil
 }
 
-func (r *RouterRPC) CheckServer() {
+func (r *RouterRPC) checkServer() {
 	for {
 		now := uint32(time.Now().Unix())
 		dead := []int32{}
@@ -159,7 +159,7 @@ func (r *RouterRPC) CheckServer() {
 		for _, v := range dead {
 			r.DelServer(&proto.DelServerArg{Server: v}, nil)
 		}
-		time.Sleep(10 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
 

@@ -61,7 +61,7 @@ func retWrite(w http.ResponseWriter, r *http.Request, res map[string]interface{}
 	if _, err := w.Write([]byte(dataStr)); err != nil {
 		log.Error("w.Write(\"%s\") error(%v)", dataStr, err)
 	}
-	log.Info("req: \"%s\", get: res:\"%s\", ip:\"%s\", time:\"%fs\"", r.URL.String(), dataStr, r.RemoteAddr, time.Now().Sub(start).Seconds())
+	log.Debug("req: \"%s\", get: res:\"%s\", ip:\"%s\", time:\"%fs\"", r.URL.String(), dataStr, r.RemoteAddr, time.Now().Sub(start).Seconds())
 }
 
 // retPWrite marshal the result and write to client(post).
@@ -75,7 +75,7 @@ func retPWrite(w http.ResponseWriter, r *http.Request, res map[string]interface{
 	if _, err := w.Write([]byte(dataStr)); err != nil {
 		log.Error("w.Write(\"%s\") error(%v)", dataStr, err)
 	}
-	log.Info("req: \"%s\", post: \"%s\", res:\"%s\", ip:\"%s\", time:\"%fs\"", r.URL.String(), *body, dataStr, r.RemoteAddr, time.Now().Sub(start).Seconds())
+	log.Debug("req: \"%s\", post: \"%s\", res:\"%s\", ip:\"%s\", time:\"%fs\"", r.URL.String(), *body, dataStr, r.RemoteAddr, time.Now().Sub(start).Seconds())
 }
 
 func Push(w http.ResponseWriter, r *http.Request) {
@@ -288,7 +288,7 @@ func Count(w http.ResponseWriter, r *http.Request) {
 		}
 		res["data"] = d
 		m, _ := allServerInfo()
-		res["ServerAddr"] = m
+		res["meta"] = m
 	}
 	return
 }
