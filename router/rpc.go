@@ -156,9 +156,11 @@ func (r *RouterRPC) checkServer() {
 			}
 		}
 		r.serversL.RUnlock()
+		r.serversL.Lock()
 		for _, v := range dead {
-			r.DelServer(&proto.DelServerArg{Server: v}, nil)
+			delete(r.servers, v)
 		}
+		r.serversL.Unlock()
 		time.Sleep(1 * time.Second)
 	}
 }

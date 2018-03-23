@@ -139,6 +139,7 @@ func (b *Bucket) Tidy() {
 			b.Del(v.userId, v.seqs[i], v.rooms[i])
 		}
 	}
+	// TODO recalculate the counters according to the sessions!
 }
 
 // Del delete the channel by sub key.
