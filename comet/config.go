@@ -83,7 +83,7 @@ type Config struct {
 	// push
 	RPCPushAddrs []string `goconf:"push:rpc.addrs:,"`
 	// logic
-	LogicAddrs []string `goconf:"logic:rpc.addrs:,"`
+	LogicAddrs map[string]struct{} `goconf:"-"`
 	// monitor
 	MonitorOpen  bool     `goconf:"monitor:open"`
 	MonitorAddrs []string `goconf:"monitor:addrs:,"`
@@ -131,6 +131,8 @@ func NewConfig() *Config {
 		BucketChannel: 1024,
 		// push
 		RPCPushAddrs: []string{"localhost:8083"},
+		// logic
+		LogicAddrs: make(map[string]struct{}),
 	}
 }
 
@@ -143,6 +145,13 @@ func InitConfig() (err error) {
 	}
 	if err := gconf.Unmarshal(Conf); err != nil {
 		return err
+	}
+	for _, serverID := range gconf.Get("logic.addrs").Keys() {
+		addr, err := gconf.Get("logic.addrs").String(serverID)
+		if err != nil {
+			return err
+		}
+		Conf.LogicAddrs[addr] = struct{}{}
 	}
 	return nil
 }

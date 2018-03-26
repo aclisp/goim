@@ -46,7 +46,7 @@ type Config struct {
 	HTTPReadTimeout  time.Duration `goconf:"base:http.read.timeout:time"`
 	HTTPWriteTimeout time.Duration `goconf:"base:http.write.timeout:time"`
 	// router RPC
-	RouterRPCAddrs map[string]string `-`
+	RouterRPCAddrs map[string]string `goconf:"-"`
 	// kafka
 	KafkaAddrs []string `goconf:"kafka:addrs"`
 	// monitor

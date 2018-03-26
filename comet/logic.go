@@ -4,6 +4,7 @@ import (
 	inet "goim/libs/net"
 	"goim/libs/net/xrpc"
 	"goim/libs/proto"
+	"math/rand"
 	"time"
 
 	log "github.com/thinkboy/log4go"
@@ -11,9 +12,10 @@ import (
 )
 
 var (
-	logicRpcClient *xrpc.Clients
-	logicRpcQuit   = make(chan struct{}, 1)
+	logicServiceSet []*xrpc.Clients
+)
 
+const (
 	logicService           = "RPC"
 	logicServicePing       = "RPC.Ping"
 	logicServiceConnect    = "RPC.Connect"
@@ -23,28 +25,44 @@ var (
 	logicServiceRegister   = "RPC.Register"
 )
 
-func InitLogicRpc(addrs []string) (err error) {
+func InitLogicRpc(addrs map[string]struct{}) (err error) {
 	var (
-		bind          string
 		network, addr string
-		rpcOptions    []xrpc.ClientOptions
 	)
-	for _, bind = range addrs {
-		if network, addr, err = inet.ParseNetwork(bind); err != nil {
-			log.Error("inet.ParseNetwork() error(%v)", err)
-			return
+	for bind := range addrs {
+		var rpcOptions []xrpc.ClientOptions
+		for _, bind = range strings.Split(bind, ",") {
+			if network, addr, err = inet.ParseNetwork(bind); err != nil {
+				log.Error("inet.ParseNetwork() error(%v)", err)
+				return
+			}
+			options := xrpc.ClientOptions{
+				Proto: network,
+				Addr:  addr,
+			}
+			rpcOptions = append(rpcOptions, options)
 		}
-		options := xrpc.ClientOptions{
-			Proto: network,
-			Addr:  addr,
-		}
-		rpcOptions = append(rpcOptions, options)
+		// rpc clients
+		rpcClient := xrpc.Dials(rpcOptions)
+		// ping & reconnect
+		rpcClient.Ping(logicServicePing)
+		logicServiceSet = append(logicServiceSet, rpcClient)
+		log.Info("init logic rpc: %v", rpcOptions)
 	}
-	// rpc clients
-	logicRpcClient = xrpc.Dials(rpcOptions)
-	// ping & reconnect
-	logicRpcClient.Ping(logicServicePing)
-	log.Info("init logic rpc: %v", rpcOptions)
+	rand.Seed(time.Now().Unix())
+	return
+}
+
+func getLogic() (c *xrpc.Clients, err error) {
+	n := len(logicServiceSet)
+	r := rand.Intn(n)
+	for i := 0; i < n; i++ {
+		c = logicServiceSet[r % n]
+		if err = c.Available(); err == nil {
+			break
+		}
+		r++
+	}
 	return
 }
 
@@ -52,8 +70,12 @@ func connect(p *proto.Proto) (key string, rid int64, heartbeat time.Duration, er
 	var (
 		arg   = proto.ConnArg{Token: string(p.Body), Server: Conf.ServerId}
 		reply = proto.ConnReply{}
+		client *xrpc.Clients
 	)
-	if err = logicRpcClient.Call(logicServiceConnect, &arg, &reply); err != nil {
+	if client, err = getLogic(); err != nil {
+		return
+	}
+	if err = client.Call(logicServiceConnect, &arg, &reply); err != nil {
 		log.Error("c.Call(\"%s\", \"%v\", &ret) error(%v)", logicServiceConnect, arg, err)
 		return
 	}
@@ -67,8 +89,12 @@ func disconnect(key string, roomId int64) (has bool, err error) {
 	var (
 		arg   = proto.DisconnArg{Key: key, RoomId: roomId}
 		reply = proto.DisconnReply{}
+		client *xrpc.Clients
 	)
-	if err = logicRpcClient.Call(logicServiceDisconnect, &arg, &reply); err != nil {
+	if client, err = getLogic(); err != nil {
+		return
+	}
+	if err = client.Call(logicServiceDisconnect, &arg, &reply); err != nil {
 		log.Error("c.Call(\"%s\", \"%v\", &ret) error(%v)", logicServiceDisconnect, arg, err)
 		return
 	}
@@ -80,8 +106,12 @@ func changeRoom(key string, orid int64, rid int64) (has bool, err error) {
 	var (
 		arg   = proto.ChangeRoomArg{Key: key, OldRoomId: orid, RoomId: rid}
 		reply = proto.ChangeRoomReply{}
+		client *xrpc.Clients
 	)
-	if err = logicRpcClient.Call(logicServiceChangeRoom, &arg, &reply); err != nil {
+	if client, err = getLogic(); err != nil {
+		return
+	}
+	if err = client.Call(logicServiceChangeRoom, &arg, &reply); err != nil {
 		log.Error("c.Call(\"%s\", \"%v\", &ret) error(%v)", logicServiceChangeRoom, arg, err)
 	}
 	has = reply.Has
@@ -92,8 +122,12 @@ func update(key string, roomId int64) (err error) {
 	var (
 		arg   = proto.UpdateArg{Key: key, RoomId: roomId, Server: Conf.ServerId}
 		reply = proto.NoReply{}
+		client *xrpc.Clients
 	)
-	if err = logicRpcClient.Call(logicServiceUpdate, &arg, &reply); err != nil {
+	if client, err = getLogic(); err != nil {
+		return
+	}
+	if err = client.Call(logicServiceUpdate, &arg, &reply); err != nil {
 		log.Error("c.Call(\"%s\", \"%v\", &ret) error(%v)", logicServiceUpdate, arg, err)
 	}
 	return
@@ -103,8 +137,12 @@ func register() (err error) {
 	var (
 		arg   = proto.RegisterArg{Server: Conf.ServerId, Info: strings.Join(Conf.WebsocketTLSBind, ",")}
 		reply = proto.NoReply{}
+		client *xrpc.Clients
 	)
-	if err = logicRpcClient.Call(logicServiceRegister, &arg, &reply); err != nil {
+	if client, err = getLogic(); err != nil {
+		return
+	}
+	if err = client.Call(logicServiceRegister, &arg, &reply); err != nil {
 		log.Error("c.Call(\"%s\", \"%v\", &ret) error(%v)", logicServiceRegister, arg, err)
 	}
 	return
