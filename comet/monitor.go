@@ -26,9 +26,11 @@ func InitMonitor(binds []string) {
 
 // monitor ping
 func (m *Monitor) Ping(w http.ResponseWriter, r *http.Request) {
-	if err := logicRpcClient.Available(); err != nil {
-		http.Error(w, fmt.Sprintf("ping rpc error(%v)", err), http.StatusInternalServerError)
-		return
+	for _, c := range logicServiceSet {
+		if err := c.Available(); err != nil {
+			http.Error(w, fmt.Sprintf("ping rpc error(%v)", err), http.StatusInternalServerError)
+			return
+		}
 	}
 	w.Write([]byte("ok"))
 }
