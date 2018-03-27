@@ -37,6 +37,32 @@ func NewOperator() Operator {
 	// setup yytars communicator
 	// servant package init will be called first!
 	//     It should read tars config file during init.
+	/* NEED THIS PATCH
+--- a/tars/servant/Application.go
++++ b/tars/servant/Application.go
+@@ -1,7 +1,7 @@
+ package servant
+
+ import (
+-       "flag"
++       //"flag"
+        "code.yy.com/yytars/goframework/kissgo/appzaplog/zap"
+        "net/http"
+        "os"
+@@ -26,9 +26,9 @@ var (
+ )
+
+ func initConfig() {
+-       _configFile := (flag.String("config", "", "init config path"))
+-       flag.Parse()
+-       configFile = *_configFile
++       //_configFile := (flag.String("config", "", "init config path"))
++       //flag.Parse()
++       configFile = "tars-config.conf"
+        if len(configFile) == 0 {
+                appzaplog.SetLogLevel("info")
+                return
+	 */
 	comm := servant.NewPbCommunicator()
 	return &DefaultOperator{
 		comm: comm,

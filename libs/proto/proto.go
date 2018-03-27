@@ -14,24 +14,32 @@ import (
 
 // for tcp
 const (
-	MaxBodySize = int32(1 << 10)
+	MaxBodySize = int32(1024*8 - 20)
 )
 
+// https://github.com/Tencent/mars/blob/master/mars/stn/proto/longlink_packer.cc
+/*
+#pragma pack(push, 1)
+struct __STNetMsgXpHeader {
+    uint32_t    head_length;
+    uint32_t    client_version;
+    uint32_t    cmdid;
+    uint32_t    seq;
+    uint32_t	body_length;
+};
+#pragma pack(pop)
+ */
 const (
 	// size
-	PackSize      = 4
-	HeaderSize    = 2
-	VerSize       = 2
-	OperationSize = 4
-	SeqIdSize     = 4
-	RawHeaderSize = PackSize + HeaderSize + VerSize + OperationSize + SeqIdSize
+	RawHeaderSize = 20
 	MaxPackSize   = MaxBodySize + int32(RawHeaderSize)
 	// offset
-	PackOffset      = 0
-	HeaderOffset    = PackOffset + PackSize
-	VerOffset       = HeaderOffset + HeaderSize
-	OperationOffset = VerOffset + VerSize
-	SeqIdOffset     = OperationOffset + OperationSize
+	HeadLengthOffset    = 0
+	ClientVersionOffset = HeadLengthOffset + 4
+	CmdIdOffset         = ClientVersionOffset + 4
+	SeqOffset           = CmdIdOffset + 4
+	BodyLengthOffset    = SeqOffset + 4
+	BodyOffset          = BodyLengthOffset + 4
 )
 
 var (
@@ -71,14 +79,13 @@ func (p *Proto) String() string {
 
 func (p *Proto) WriteTo(b *bytes.Writer) {
 	var (
-		packLen = RawHeaderSize + int32(len(p.Body))
 		buf     = b.Peek(RawHeaderSize)
 	)
-	binary.BigEndian.PutInt32(buf[PackOffset:], packLen)
-	binary.BigEndian.PutInt16(buf[HeaderOffset:], int16(RawHeaderSize))
-	binary.BigEndian.PutInt16(buf[VerOffset:], p.Ver)
-	binary.BigEndian.PutInt32(buf[OperationOffset:], p.Operation)
-	binary.BigEndian.PutInt32(buf[SeqIdOffset:], p.SeqId)
+	binary.BigEndian.PutInt32(buf[HeadLengthOffset:], RawHeaderSize)
+	binary.BigEndian.PutInt32(buf[ClientVersionOffset:], int32(p.Ver))
+	binary.BigEndian.PutInt32(buf[CmdIdOffset:], p.Operation)
+	binary.BigEndian.PutInt32(buf[SeqOffset:], p.SeqId)
+	binary.BigEndian.PutInt32(buf[BodyLengthOffset:], int32(len(p.Body)))
 	if p.Body != nil {
 		b.Write(p.Body)
 	}
@@ -86,27 +93,29 @@ func (p *Proto) WriteTo(b *bytes.Writer) {
 
 func (p *Proto) ReadTCP(rr *bufio.Reader) (err error) {
 	var (
-		bodyLen   int
-		headerLen int16
+		bodyLen   int32
+		headLen   int32
 		packLen   int32
 		buf       []byte
 	)
 	if buf, err = rr.Pop(RawHeaderSize); err != nil {
 		return
 	}
-	packLen = binary.BigEndian.Int32(buf[PackOffset:HeaderOffset])
-	headerLen = binary.BigEndian.Int16(buf[HeaderOffset:VerOffset])
-	p.Ver = binary.BigEndian.Int16(buf[VerOffset:OperationOffset])
-	p.Operation = binary.BigEndian.Int32(buf[OperationOffset:SeqIdOffset])
-	p.SeqId = binary.BigEndian.Int32(buf[SeqIdOffset:])
+	headLen = binary.BigEndian.Int32(buf[HeadLengthOffset : ClientVersionOffset])
+	bodyLen = binary.BigEndian.Int32(buf[BodyLengthOffset : BodyOffset])
+	packLen = headLen + bodyLen
+
+	p.Ver       = int16(binary.BigEndian.Int32(buf[ClientVersionOffset : CmdIdOffset]))
+	p.Operation = binary.BigEndian.Int32(buf[CmdIdOffset : SeqOffset])
+	p.SeqId     = binary.BigEndian.Int32(buf[SeqOffset : BodyLengthOffset])
 	if packLen > MaxPackSize {
 		return ErrProtoPackLen
 	}
-	if headerLen != RawHeaderSize {
+	if headLen != RawHeaderSize {
 		return ErrProtoHeaderLen
 	}
-	if bodyLen = int(packLen - int32(headerLen)); bodyLen > 0 {
-		p.Body, err = rr.Pop(bodyLen)
+	if bodyLen > 0 {
+		p.Body, err = rr.Pop(int(bodyLen))
 	} else {
 		p.Body = nil
 	}
@@ -116,22 +125,20 @@ func (p *Proto) ReadTCP(rr *bufio.Reader) (err error) {
 func (p *Proto) WriteTCP(wr *bufio.Writer) (err error) {
 	var (
 		buf     []byte
-		packLen int32
 	)
 	if p.Operation == define.OP_RAW {
 		// write without buffer, job concact proto into raw buffer
 		_, err = wr.WriteRaw(p.Body)
 		return
 	}
-	packLen = RawHeaderSize + int32(len(p.Body))
 	if buf, err = wr.Peek(RawHeaderSize); err != nil {
 		return
 	}
-	binary.BigEndian.PutInt32(buf[PackOffset:], packLen)
-	binary.BigEndian.PutInt16(buf[HeaderOffset:], int16(RawHeaderSize))
-	binary.BigEndian.PutInt16(buf[VerOffset:], p.Ver)
-	binary.BigEndian.PutInt32(buf[OperationOffset:], p.Operation)
-	binary.BigEndian.PutInt32(buf[SeqIdOffset:], p.SeqId)
+	binary.BigEndian.PutInt32(buf[HeadLengthOffset:], RawHeaderSize)
+	binary.BigEndian.PutInt32(buf[ClientVersionOffset:], int32(p.Ver))
+	binary.BigEndian.PutInt32(buf[CmdIdOffset:], p.Operation)
+	binary.BigEndian.PutInt32(buf[SeqOffset:], p.SeqId)
+	binary.BigEndian.PutInt32(buf[BodyLengthOffset:], int32(len(p.Body)))
 	if p.Body != nil {
 		_, err = wr.Write(p.Body)
 	}
@@ -154,20 +161,22 @@ func (p *Proto) WriteBodyTo(b *bytes.Writer) (err error) {
 		jb  []byte
 		bts []byte
 	)
-	offset := int32(PackOffset)
+	offset := int32(0)
 	buf := p.Body[:]
 	for {
 		if (len(buf[offset:])) < RawHeaderSize {
 			// should not be here
 			break
 		}
-		packLen := binary.BigEndian.Int32(buf[offset : offset+HeaderOffset])
+		headLen := binary.BigEndian.Int32(buf[offset+HeadLengthOffset : offset+ClientVersionOffset])
+		bodyLen := binary.BigEndian.Int32(buf[offset+BodyLengthOffset : offset+BodyOffset])
+		packLen := headLen + bodyLen
 		packBuf := buf[offset : offset+packLen]
 		// packet
-		ph.Ver = binary.BigEndian.Int16(packBuf[VerOffset:OperationOffset])
-		ph.Operation = binary.BigEndian.Int32(packBuf[OperationOffset:SeqIdOffset])
-		ph.SeqId = binary.BigEndian.Int32(packBuf[SeqIdOffset:RawHeaderSize])
-		ph.Body = packBuf[RawHeaderSize:]
+		ph.Ver       = int16(binary.BigEndian.Int32(packBuf[ClientVersionOffset : CmdIdOffset]))
+		ph.Operation = binary.BigEndian.Int32(packBuf[CmdIdOffset : SeqOffset])
+		ph.SeqId     = binary.BigEndian.Int32(packBuf[SeqOffset : BodyLengthOffset])
+		ph.Body      = packBuf[BodyOffset:]
 		if jb, err = json.Marshal(&ph); err != nil {
 			return
 		}

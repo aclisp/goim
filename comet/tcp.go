@@ -11,6 +11,7 @@ import (
 	"time"
 
 	log "github.com/thinkboy/log4go"
+	"fmt"
 )
 
 // InitTCP listen all tcp.bind and start accept connections.
@@ -150,11 +151,28 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 		}
 		if p.Operation == define.OP_HEARTBEAT {
 			tr.Set(trd, hb)
+			server.operator.Update(key, ch.RoomId)
 			p.Body = nil
 			p.Operation = define.OP_HEARTBEAT_REPLY
 			if Debug {
 				log.Debug("key: %s receive heartbeat", key)
 			}
+		} else if p.Operation == define.OP_ROOM_CHANGE {
+			var ret int
+			var msg string
+			if rid, err := parseRoomId(string(p.Body)); err != nil {
+				ret = 1
+				msg = fmt.Sprintf("invalid roomid: %s", p.Body)
+			} else if orid, err := b.Change(key, rid); err != nil {
+				ret = 2
+				msg = fmt.Sprintf("change roomid %d->%d err: %v", orid, rid, err)
+			} else {
+				ret = 0
+				msg = fmt.Sprintf("change roomid %d->%d ok", orid, rid)
+				server.operator.ChangeRoom(key, orid, rid)
+			}
+			p.Body = []byte(fmt.Sprintf(`{"ret":%d,"msg":%q}`, ret, msg))
+			p.Operation = define.OP_ROOM_CHANGE_REPLY
 		} else {
 			if err = server.operator.Operate(p); err != nil {
 				break
@@ -296,14 +314,21 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 		err = ErrOperation
 		return
 	}
-	if key, rid, heartbeat, err = server.operator.Connect(p); err != nil {
+	key, rid, heartbeat, err = server.operator.Connect(p)
+	p.Operation = define.OP_AUTH_REPLY
+	if err != nil {
+		p.Body = []byte(fmt.Sprintf(`{"ret":%d,"msg":%q}`, 1, err.Error()))
+		p.WriteTCP(wr)
+		wr.Flush()
+		p.Body = nil
 		return
 	}
-	p.Body = nil
-	p.Operation = define.OP_AUTH_REPLY
+	p.Body = okJSONBody
 	if err = p.WriteTCP(wr); err != nil {
+		p.Body = nil
 		return
 	}
 	err = wr.Flush()
+	p.Body = nil
 	return
 }
