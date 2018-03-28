@@ -146,6 +146,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 		if err = p.ReadTCP(rr); err != nil {
 			break
 		}
+		log.Debug("Rx %s tcp serve %+v", key, p)
 		if white {
 			DefaultWhitelist.Log.Printf("key: %s read proto:%v\n", key, p)
 		}
@@ -281,6 +282,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 		if err = wr.Flush(); err != nil {
 			break
 		}
+		log.Debug("Tx %s tcp auth %+v", key, p)
 		if white {
 			DefaultWhitelist.Log.Printf("key: %s flush\n", key)
 		}
@@ -309,6 +311,7 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 	if err = p.ReadTCP(rr); err != nil {
 		return
 	}
+	log.Debug("Rx tcp auth %+v", p)
 	if p.Operation != define.OP_AUTH {
 		log.Warn("auth operation not valid: %d", p.Operation)
 		err = ErrOperation
@@ -320,6 +323,7 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 		p.Body = []byte(fmt.Sprintf(`{"ret":%d,"msg":%q}`, 1, err.Error()))
 		p.WriteTCP(wr)
 		wr.Flush()
+		log.Debug("Tx tcp auth %+v", p)
 		p.Body = nil
 		return
 	}
@@ -329,6 +333,7 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 		return
 	}
 	err = wr.Flush()
+	log.Debug("Tx %s tcp auth %+v", key, p)
 	p.Body = nil
 	return
 }
