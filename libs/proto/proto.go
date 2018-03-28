@@ -1,6 +1,7 @@
 package proto
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,7 +29,7 @@ struct __STNetMsgXpHeader {
     uint32_t	body_length;
 };
 #pragma pack(pop)
- */
+*/
 const (
 	// size
 	RawHeaderSize = 20
@@ -74,12 +75,12 @@ func (p *Proto) Reset() {
 }
 
 func (p *Proto) String() string {
-	return fmt.Sprintf("\n-------- proto --------\nver: %d\nop: %d\nseq: %d\nbody: %v\n-----------------------", p.Ver, p.Operation, p.SeqId, p.Body)
+	return fmt.Sprintf("\n-------- proto --------\nver: %d\nop: %d\nseq: %d\nbody: \n%s-----------------------", p.Ver, p.Operation, p.SeqId, hex.Dump(p.Body))
 }
 
 func (p *Proto) WriteTo(b *bytes.Writer) {
 	var (
-		buf     = b.Peek(RawHeaderSize)
+		buf = b.Peek(RawHeaderSize)
 	)
 	binary.BigEndian.PutInt32(buf[HeadLengthOffset:], RawHeaderSize)
 	binary.BigEndian.PutInt32(buf[ClientVersionOffset:], int32(p.Ver))
@@ -93,21 +94,21 @@ func (p *Proto) WriteTo(b *bytes.Writer) {
 
 func (p *Proto) ReadTCP(rr *bufio.Reader) (err error) {
 	var (
-		bodyLen   int32
-		headLen   int32
-		packLen   int32
-		buf       []byte
+		bodyLen int32
+		headLen int32
+		packLen int32
+		buf     []byte
 	)
 	if buf, err = rr.Pop(RawHeaderSize); err != nil {
 		return
 	}
-	headLen = binary.BigEndian.Int32(buf[HeadLengthOffset : ClientVersionOffset])
-	bodyLen = binary.BigEndian.Int32(buf[BodyLengthOffset : BodyOffset])
+	headLen = binary.BigEndian.Int32(buf[HeadLengthOffset:ClientVersionOffset])
+	bodyLen = binary.BigEndian.Int32(buf[BodyLengthOffset:BodyOffset])
 	packLen = headLen + bodyLen
 
-	p.Ver       = int16(binary.BigEndian.Int32(buf[ClientVersionOffset : CmdIdOffset]))
-	p.Operation = binary.BigEndian.Int32(buf[CmdIdOffset : SeqOffset])
-	p.SeqId     = binary.BigEndian.Int32(buf[SeqOffset : BodyLengthOffset])
+	p.Ver = int16(binary.BigEndian.Int32(buf[ClientVersionOffset:CmdIdOffset]))
+	p.Operation = binary.BigEndian.Int32(buf[CmdIdOffset:SeqOffset])
+	p.SeqId = binary.BigEndian.Int32(buf[SeqOffset:BodyLengthOffset])
 	if packLen > MaxPackSize {
 		return ErrProtoPackLen
 	}
@@ -124,7 +125,7 @@ func (p *Proto) ReadTCP(rr *bufio.Reader) (err error) {
 
 func (p *Proto) WriteTCP(wr *bufio.Writer) (err error) {
 	var (
-		buf     []byte
+		buf []byte
 	)
 	if p.Operation == define.OP_RAW {
 		// write without buffer, job concact proto into raw buffer
@@ -173,10 +174,10 @@ func (p *Proto) WriteBodyTo(b *bytes.Writer) (err error) {
 		packLen := headLen + bodyLen
 		packBuf := buf[offset : offset+packLen]
 		// packet
-		ph.Ver       = int16(binary.BigEndian.Int32(packBuf[ClientVersionOffset : CmdIdOffset]))
-		ph.Operation = binary.BigEndian.Int32(packBuf[CmdIdOffset : SeqOffset])
-		ph.SeqId     = binary.BigEndian.Int32(packBuf[SeqOffset : BodyLengthOffset])
-		ph.Body      = packBuf[BodyOffset:]
+		ph.Ver = int16(binary.BigEndian.Int32(packBuf[ClientVersionOffset:CmdIdOffset]))
+		ph.Operation = binary.BigEndian.Int32(packBuf[CmdIdOffset:SeqOffset])
+		ph.SeqId = binary.BigEndian.Int32(packBuf[SeqOffset:BodyLengthOffset])
+		ph.Body = packBuf[BodyOffset:]
 		if jb, err = json.Marshal(&ph); err != nil {
 			return
 		}

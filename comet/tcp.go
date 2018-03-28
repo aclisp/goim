@@ -1,17 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"goim/libs/bufio"
 	"goim/libs/bytes"
 	"goim/libs/define"
 	"goim/libs/proto"
 	itime "goim/libs/time"
-	"io"
 	"net"
 	"time"
 
 	log "github.com/thinkboy/log4go"
-	"fmt"
 )
 
 // InitTCP listen all tcp.bind and start accept connections.
@@ -191,7 +190,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 	if white {
 		DefaultWhitelist.Log.Printf("key: %s server tcp error(%v)\n", key, err)
 	}
-	if err != nil && err != io.EOF {
+	if err != nil {
 		log.Error("key: %s server tcp failed error(%v)", key, err)
 	}
 	b.Del(key)
@@ -257,6 +256,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 				if err = p.WriteTCP(wr); err != nil {
 					goto failed
 				}
+				log.Debug("Tx %s tcp dispatch %+v", key, p)
 				if white {
 					DefaultWhitelist.Log.Printf("key: %s write client proto%v\n", key, p)
 				}
@@ -271,6 +271,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 			if err = p.WriteTCP(wr); err != nil {
 				goto failed
 			}
+			log.Debug("Tx %s tcp dispatch %+v", key, p)
 			if white {
 				DefaultWhitelist.Log.Printf("key: %s write server proto%v\n", key, p)
 			}
@@ -282,7 +283,6 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 		if err = wr.Flush(); err != nil {
 			break
 		}
-		log.Debug("Tx %s tcp dispatch %+v", key, p)
 		if white {
 			DefaultWhitelist.Log.Printf("key: %s flush\n", key)
 		}
