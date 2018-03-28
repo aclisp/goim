@@ -1,6 +1,6 @@
 # 客户端长连接协议文档
 
-客户端建立长连接与后端服务通信。目前只支持一种协议 websocket。
+客户端建立长连接与后端服务通信。协议使用 websocket。
 
 ## websocket 
 
@@ -99,11 +99,11 @@ Websocket（JSON Frame）
 目前业务消息转发到YYTars框架后端
 
 上行 `req` 为请求参数用protobuf序列化之后的base64编码，
-下行 `body` 为应答参数用protobuf序列化之后的base64编码 
+下行 `rsp` 为应答参数用protobuf序列化之后的base64编码 
 
 ```
-上行 {"ver":1,"op":4,"seq":4,"body":{"obj":"YYLiteApp.AttentionSrv.AttentionObj@tcp -h 58.215.138.213 -p 22018 -t 6000","func":"QueryUserAttentionList","req":"CNvxnu4EEhBtb2JBdHRlbnRpb25MaXRl"}}
-下行 [{"ver":1,"op":5,"seq":4,"body":"ENvxnu4EGhBtb2JBdHRlbnRpb25MaXRlIhoI+K3WBxITMjAxOC0wMS0wMiAxNjoyNDowMSIbCJ32hIICEhMyMDE4LTAxLTAzIDE3OjU0OjEwIhsIq4ri2QMSEzIwMTgtMDEtMDMgMTk6NDA6MjUqDAoHdXNldGltZRIBMA=="}]
+上行 {"ver":1,"op":4,"seq":4,"body":{"obj":"YYLiteApp.AttentionSrv.AttentionObj","func":"QueryUserAttentionList","req":"CNvxnu4EEhBtb2JBdHRlbnRpb25MaXRl"}}
+下行 [{"ver":1,"op":5,"seq":4,"body":{"rsp":"ENvxnu4EGhBtb2JBdHRlbnRpb25MaXRlIhsIq4ri2QMSEzIwMTgtMDEtMDMgMTk6NDA6MjUiGgj4rdYHEhMyMDE4LTAxLTAyIDE2OjI0OjAxIhsInfaEggISEzIwMTgtMDEtMDMgMTc6NTQ6MTAqDAoHdXNldGltZRIBMA=="}}]
 ```
 
 ### 切换房间消息格式
