@@ -174,7 +174,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 			p.Body = []byte(fmt.Sprintf(`{"ret":%d,"msg":%q}`, ret, msg))
 			p.Operation = define.OP_ROOM_CHANGE_REPLY
 		} else {
-			if err = server.operator.Operate(p); err != nil {
+			if err = server.operator.Operate(p, TCPConn); err != nil {
 				break
 			}
 		}

@@ -174,7 +174,7 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 			p.Operation = define.OP_ROOM_CHANGE_REPLY
 		} else {
 			// process message
-			if err = server.operator.Operate(p); err != nil {
+			if err = server.operator.Operate(p, WebsocketConn); err != nil {
 				break
 			}
 		}

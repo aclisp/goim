@@ -1,22 +1,23 @@
 package main
 
 import (
-	"fmt"
-	"encoding/json"
 	"goim/libs/define"
 	"goim/libs/proto"
 	"time"
 
 	log "github.com/thinkboy/log4go"
-	"code.yy.com/yytars/goframework/tars/servant"
-	"context"
-	"encoding/base64"
-	"encoding/hex"
+)
+
+type ConnType int
+
+const (
+	WebsocketConn ConnType = iota
+	TCPConn
 )
 
 type Operator interface {
 	// Operate process the common operation such as send message etc.
-	Operate(*proto.Proto) error
+	Operate(*proto.Proto, ConnType) error
 	// Connect used for auth user and return a subkey, roomid, hearbeat.
 	Connect(*proto.Proto) (string, int64, time.Duration, error)
 	// Disconnect used for revoke the subkey.
@@ -30,84 +31,40 @@ type Operator interface {
 }
 
 type DefaultOperator struct {
-	comm *servant.Communicator
+	WebsocketToRPC RPCInvoker
+	TCPToRPC       RPCInvoker
 }
 
 func NewOperator() Operator {
-	// setup yytars communicator
-	// servant package init will be called first!
-	//     It should read tars config file during init.
-	/* NEED THIS PATCH
---- a/tars/servant/Application.go
-+++ b/tars/servant/Application.go
-@@ -1,7 +1,7 @@
- package servant
-
- import (
--       "flag"
-+       //"flag"
-        "code.yy.com/yytars/goframework/kissgo/appzaplog/zap"
-        "net/http"
-        "os"
-@@ -26,9 +26,9 @@ var (
- )
-
- func initConfig() {
--       _configFile := (flag.String("config", "", "init config path"))
--       flag.Parse()
--       configFile = *_configFile
-+       //_configFile := (flag.String("config", "", "init config path"))
-+       //flag.Parse()
-+       configFile = "tars-config.conf"
-        if len(configFile) == 0 {
-                appzaplog.SetLogLevel("info")
-                return
-	 */
-	comm := servant.NewPbCommunicator()
 	return &DefaultOperator{
-		comm: comm,
+		WebsocketToRPC: NewWebsocketToRPC(),
+		TCPToRPC:       NewTCPToRPC(),
 	}
 }
 
-func (operator *DefaultOperator) Operate(p *proto.Proto) error {
+func (operator *DefaultOperator) Operate(p *proto.Proto, connType ConnType) error {
 	var (
 		body []byte
+		invoker RPCInvoker
 	)
+	if connType == TCPConn {
+		invoker = operator.TCPToRPC
+	} else {
+		invoker = operator.WebsocketToRPC
+	}
 	if p.Operation == define.OP_SEND_SMS {
-		// call yytars api
-		type RPC struct {
-			Obj string `json:"obj"`
-			Func string `json:"func"`
-			Req json.RawMessage `json:"req"`
-			Opt map[string]string `json:"opt"`
-		}
-		var rpc RPC
-		json.Unmarshal(p.Body, &rpc)
-		log.Info("rpc.obj = %s", rpc.Obj)
-		log.Info("rpc.func = %s", rpc.Func)
-		if len(rpc.Req) < 2 {
-			err := fmt.Errorf("rpc.req is not a json string: %s", rpc.Req)
-			log.Error("%v", err)
-			return err
-		}
-		rpc.Req = rpc.Req[1:len(rpc.Req)-1]
-		rpcReqBuf, err := base64.StdEncoding.DecodeString(string(rpc.Req))
+		input, err := invoker.Decode(p.Body)
 		if err != nil {
-			err := fmt.Errorf("rpc.req can not be decode to hex: %s", rpc.Req)
-			log.Error("%v", err)
 			return err
 		}
-		log.Info("rpc.req = \n%s", hex.Dump(rpcReqBuf))
-
-		rpcStub := operator.comm.GetServantProxy(rpc.Obj)
-		rpcResp, err := rpcStub.Taf_invoke(context.TODO(), 0, rpc.Func, rpcReqBuf, nil, rpc.Opt)
+		output, err := invoker.Invoke(input)
 		if err != nil {
-			log.Error("rpc.invoke error: %v", err)
 			return err
 		}
-
-		log.Info("rpc.rsp = \n%s", hex.Dump(rpcResp.SBuffer))
-		p.Body = []byte(`"` + base64.StdEncoding.EncodeToString(rpcResp.SBuffer) + `"`)
+		p.Body, err = invoker.Encode(output)
+		if err != nil {
+			return err
+		}
 		p.Operation = define.OP_SEND_SMS_REPLY
 	} else if p.Operation == define.OP_TEST {
 		log.Debug("test operation: %s", body)
