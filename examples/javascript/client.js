@@ -53,7 +53,7 @@
                             var p = self.pending[data.seq];
                             delete self.pending[data.seq];
                             var rspT = p.rspT;
-                            var rspM = rspT.decode(stringToBuffer(data.body));
+                            var rspM = rspT.decode(stringToBuffer(data.body.rsp));
                             var rsp = rspT.toObject(rspM);
                             p.callback(rsp);
                         } else {
