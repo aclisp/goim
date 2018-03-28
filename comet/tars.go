@@ -61,6 +61,7 @@ func (*RPCInput) ProtoMessage()               {}
 type RPCOutput struct {
 	Ret  int32             `protobuf:"zigzag32,1,opt,name=ret" json:"ret,omitempty"`
 	Rsp  json.RawMessage   `protobuf:"bytes,2,opt,name=rsp,proto3" json:"rsp,omitempty"`
+	Opt  map[string]string `protobuf:"bytes,3,rep,name=opt" json:"opt,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 }
 
 func (m *RPCOutput) Reset()                    { *m = RPCOutput{} }
@@ -121,6 +122,7 @@ func invoke(comm *servant.Communicator, input RPCInput) (output RPCOutput, err e
 	}
 	output.Ret = rpcResp.IRet
 	output.Rsp = rpcResp.SBuffer
+	output.Opt = rpcResp.Context
 	return
 }
 
@@ -131,6 +133,7 @@ func (ws WebsocketToRPC) Invoke(input RPCInput) (output RPCOutput, err error) {
 func (ws WebsocketToRPC) Encode(output RPCOutput) (body json.RawMessage, err error) {
 	log.Debug("rpc.ret = %d", output.Ret)
 	log.Debug("rpc.rsp = \n%s", hex.Dump(output.Rsp))
+	log.Debug("rpc.opt = %v", output.Opt)
 	output.Rsp = []byte(`"` + base64.StdEncoding.EncodeToString(output.Rsp) + `"`)
 	if body, err = json.Marshal(output); err != nil {
 		log.Error("can not encode rpc output to json: %v", err)
@@ -169,6 +172,7 @@ func (t TCPToRPC) Invoke(input RPCInput) (output RPCOutput, err error) {
 func (t TCPToRPC) Encode(output RPCOutput) (body json.RawMessage, err error) {
 	log.Debug("rpc.ret = %d", output.Ret)
 	log.Debug("rpc.rsp = \n%s", hex.Dump(output.Rsp))
+	log.Debug("rpc.opt = %v", output.Opt)
 	if body, err = pb.Marshal(&output); err != nil {
 		log.Error("can not encode rpc output to protobuf: %v", err)
 		return

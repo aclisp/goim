@@ -26,7 +26,7 @@ struct __STNetMsgXpHeader {
 #pragma pack(pop)
 ```
 
-**请求body**
+**RPC请求body**
 
 ```protobuf
 syntax = "proto3";
@@ -38,12 +38,22 @@ message RPCInput {
 }
 ```
 
-**返回body**
+**RPC返回body**
 
 ```protobuf
 message RPCOutput {
     sint32 retCode        = 1;
     bytes  responseBuffer = 2;
+    map<string, string> headers = 3;
+}
+```
+
+**服务器推送body**
+```protobuf
+message ServerPush {
+    sint32 messageType    = 1;
+    bytes  pushBuffer     = 2;
+    map<string, string> headers = 3;
 }
 ```
 
@@ -56,7 +66,7 @@ message RPCOutput {
 | cmdid         | true  | int32 | 指令编号 |
 | seq           | true  | int32 | 序列号（服务端返回和客户端发送一一对应，广播总是0） |
 | body_length   | true  | int32 | body长度 |
-| body          | false  | bytes | 与指令有关 |
+| body          | false | bytes | 与指令有关 |
 
 ### 指令编号
 
