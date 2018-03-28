@@ -22,6 +22,7 @@ import (
 	log "github.com/thinkboy/log4go"
 	"net/url"
 	"net"
+	pb "github.com/golang/protobuf/proto"
 )
 
 const (
@@ -130,7 +131,7 @@ func startWebsocketClient(key string) {
 		log.Error("net.Dial(\"%s\") error(%v)", os.Args[3], err)
 		return
 	}
-	seqId := int32(0)
+	seqId := int32(1)
 	proto := new(Proto)
 	proto.Ver = 1
 	// auth
@@ -210,7 +211,7 @@ func startTcpClient(key string) {
 		log.Error("net.Dial(\"%s\") error(%v)", os.Args[3], err)
 		return
 	}
-	seqId := int32(0)
+	seqId := int32(1)
 	wr := bufio.NewWriter(conn)
 	rd := bufio.NewReader(conn)
 	proto := new(Proto)
@@ -247,6 +248,39 @@ func startTcpClient(key string) {
 			// test heartbeat
 			time.Sleep(heart)
 			seqId++
+			// test protobuf
+			queryUserAttentionList := func() {
+				// inner packet
+				req := PQueryUserAttentionListReq{}
+				req.Uid = 1304934619
+				req.AppData = "mobAttentionLite"
+				reqBuf, err := pb.Marshal(&req)
+				if err != nil {
+					log.Error("key:%s pb.Marshal(%v) error(%v)", key, req, err)
+					return
+				}
+				// outer packet
+				in := RPCInput{}
+				in.ServiceName = "YYLiteApp.AttentionSrv.AttentionObj"
+				in.MethodName = "QueryUserAttentionList"
+				in.RequestBuffer = reqBuf
+				inBuf, err := pb.Marshal(&in)
+				if err != nil {
+					log.Error("key:%s pb.Marshal(%v) error(%v)", key, in, err)
+					return
+				}
+				// send
+				proto1.Operation = OP_SEND_SMS
+				proto1.SeqId = seqId
+				proto1.Body = inBuf
+				if err = tcpWriteProto(wr, proto1); err != nil {
+					log.Error("key:%s tcpWriteProto(queryUserAttentionList) error(%v)", key, err)
+					return
+				}
+				log.Debug("key:%s tcp write queryUserAttentionList", key)
+				seqId++
+			}
+			queryUserAttentionList()
 			select {
 			case <-quit:
 				return
@@ -271,6 +305,22 @@ func startTcpClient(key string) {
 			atomic.AddInt64(&countDown, 1)
 		} else if proto.Operation == OP_TEST_REPLY {
 			log.Debug("tcp body: %s", string(proto.Body))
+		} else if proto.Operation == OP_SEND_SMS_REPLY && proto.SeqId != 0 {
+			// outer packet
+			out := RPCOutput{}
+			err = pb.Unmarshal(proto.Body, &out)
+			if err != nil {
+				log.Error("key:%s tcp receive OP_SEND_SMS_REPLY error(%v)", key, err)
+				return
+			}
+			// inner packet
+			rsp := PQueryUserAttentionListRsp{}
+			err = pb.Unmarshal(out.ResponseBuffer, &rsp)
+			if err != nil {
+				log.Error("key:%s tcp receive OP_SEND_SMS_REPLY error(%v)", key, err)
+				return
+			}
+			log.Debug("key:%s tcp queryUserAttentionList msg: %v", key, rsp)
 		} else if proto.Operation == OP_SEND_SMS_REPLY {
 			log.Info("key:%s tcp msg: %s", key, string(proto.Body))
 			atomic.AddInt64(&countDown, 1)
