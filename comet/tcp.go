@@ -282,7 +282,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 		if err = wr.Flush(); err != nil {
 			break
 		}
-		log.Debug("Tx %s tcp auth %+v", key, p)
+		log.Debug("Tx %s tcp dispatch %+v", key, p)
 		if white {
 			DefaultWhitelist.Log.Printf("key: %s flush\n", key)
 		}
