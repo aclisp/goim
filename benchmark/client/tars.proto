@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+message RPCInput {
+    string obj  = 1;
+    string func = 2;
+    bytes  req  = 3;
+    map<string, string> opt = 4;
+}
+
+message RPCOutput {
+    sint32 ret  = 1;
+    bytes  rsp  = 2;
+}
+
