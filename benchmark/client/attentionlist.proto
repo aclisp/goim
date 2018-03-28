@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package main;
+
 message PQueryUserAttentionListReq {
     uint32 Uid = 1;
     string AppData = 2;

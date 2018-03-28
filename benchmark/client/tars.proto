@@ -1,14 +1,16 @@
 syntax = "proto3";
 
+package main;
+
 message RPCInput {
-    string obj  = 1;
-    string func = 2;
-    bytes  req  = 3;
-    map<string, string> opt = 4;
+    string serviceName    = 1;
+    string methodName     = 2;
+    bytes  requestBuffer  = 3;
+    map<string, string> headers = 4;
 }
 
 message RPCOutput {
-    sint32 ret  = 1;
-    bytes  rsp  = 2;
+    sint32 retCode        = 1;
+    bytes  responseBuffer = 2;
 }
 
