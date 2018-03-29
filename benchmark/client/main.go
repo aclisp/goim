@@ -80,8 +80,8 @@ func main() {
 	go result()
 
 	for i := begin; i < begin+num; i++ {
-		key := fmt.Sprintf(`"0|%d|-1"`, i)
-		go websocketClient(key)
+		key := fmt.Sprintf("%d", i)
+		//go websocketClient(key)
 		go tcpClient(key)
 	}
 
@@ -221,7 +221,13 @@ func startTcpClient(key string) {
 	// time.Sleep(time.Second * 31)
 	proto.Operation = OP_AUTH
 	proto.SeqId = seqId
-	proto.Body = []byte(key)
+	in := RPCInput{}
+	in.Headers["uid"] = key
+	proto.Body, err = pb.Marshal(&in)
+	if err != nil {
+		log.Error("key:%s pb.Marshal(%v) error(%v)", key, in, err)
+		return
+	}
 	if err = tcpWriteProto(wr, proto); err != nil {
 		log.Error("tcpWriteProto() error(%v)", err)
 		return
