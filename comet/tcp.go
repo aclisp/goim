@@ -317,6 +317,7 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 			log.Warn("auth operation not valid: %d", p.Operation)
 			continue
 		}
+		break
 	}
 	key, rid, heartbeat, err = server.operator.Connect(p)
 	p.Operation = define.OP_AUTH_REPLY
