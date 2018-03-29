@@ -222,6 +222,7 @@ func startTcpClient(key string) {
 	proto.Operation = OP_AUTH
 	proto.SeqId = seqId
 	in := RPCInput{}
+	in.Headers = make(map[string]string)
 	in.Headers["uid"] = key
 	proto.Body, err = pb.Marshal(&in)
 	if err != nil {

@@ -308,14 +308,15 @@ failed:
 
 // auth for goim handshake with client, use rsa & aes.
 func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto) (key string, rid int64, heartbeat time.Duration, err error) {
-	if err = p.ReadTCP(rr); err != nil {
-		return
-	}
-	log.Debug("Rx tcp auth %+v", p)
-	if p.Operation != define.OP_AUTH {
-		log.Warn("auth operation not valid: %d", p.Operation)
-		err = ErrOperation
-		return
+	for {
+		if err = p.ReadTCP(rr); err != nil {
+			return
+		}
+		log.Debug("Rx tcp auth %+v", p)
+		if p.Operation != define.OP_AUTH {
+			log.Warn("auth operation not valid: %d", p.Operation)
+			continue
+		}
 	}
 	key, rid, heartbeat, err = server.operator.Connect(p)
 	p.Operation = define.OP_AUTH_REPLY
