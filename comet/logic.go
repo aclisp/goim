@@ -68,7 +68,7 @@ func getLogic() (c *xrpc.Clients, err error) {
 
 func connect(p *proto.Proto) (key string, rid int64, heartbeat time.Duration, err error) {
 	var (
-		arg   = proto.ConnArg{Token: string(p.Body), Server: Conf.ServerId}
+		arg   = proto.ConnArg{Body: p.Body, Server: Conf.ServerId}
 		reply = proto.ConnReply{}
 		client *xrpc.Clients
 	)

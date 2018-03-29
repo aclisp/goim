@@ -320,14 +320,23 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 	key, rid, heartbeat, err = server.operator.Connect(p)
 	p.Operation = define.OP_AUTH_REPLY
 	if err != nil {
-		p.Body = []byte(fmt.Sprintf(`{"ret":%d,"msg":%q}`, 1, err.Error()))
+		output := proto.RPCOutput{
+			Ret: 1,
+			Desc: err.Error(),
+		}
+		tag := proto.TCPToRPC{}
+		p.Body, _ = tag.Encode(output)
 		p.WriteTCP(wr)
 		wr.Flush()
 		log.Debug("Tx tcp auth %+v", p)
 		p.Body = nil
 		return
 	}
-	p.Body = okJSONBody
+	output := proto.RPCOutput{
+		Ret: 0,
+	}
+	tag := proto.TCPToRPC{}
+	p.Body, _ = tag.Encode(output)
 	if err = p.WriteTCP(wr); err != nil {
 		p.Body = nil
 		return

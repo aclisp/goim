@@ -31,21 +31,21 @@ type Operator interface {
 }
 
 type DefaultOperator struct {
-	WebsocketToRPC RPCInvoker
-	TCPToRPC       RPCInvoker
+	WebsocketToRPC proto.RPCInvoker
+	TCPToRPC       proto.RPCInvoker
 }
 
 func NewOperator() Operator {
 	return &DefaultOperator{
-		WebsocketToRPC: NewWebsocketToRPC(),
-		TCPToRPC:       NewTCPToRPC(),
+		WebsocketToRPC: proto.NewWebsocketToRPC(),
+		TCPToRPC:       proto.NewTCPToRPC(),
 	}
 }
 
 func (operator *DefaultOperator) Operate(p *proto.Proto, connType ConnType) error {
 	var (
 		body []byte
-		invoker RPCInvoker
+		invoker proto.RPCInvoker
 	)
 	if connType == TCPConn {
 		invoker = operator.TCPToRPC

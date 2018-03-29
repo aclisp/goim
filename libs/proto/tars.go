@@ -1,4 +1,4 @@
-package main
+package proto
 
 import (
 	"code.yy.com/yytars/goframework/tars/servant"

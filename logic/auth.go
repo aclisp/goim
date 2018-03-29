@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"goim/libs/define"
+	"goim/libs/proto"
 	"goim/libs/thriftpool"
 	"goim/logic/secuserinfo"
 	"strconv"
-	"strings"
 	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
@@ -16,7 +17,7 @@ import (
 
 // developer could implement "Auth" interface for decide how get userId, or roomId
 type Auther interface {
-	Auth(token string) (userId int64, roomId int64, err error)
+	Auth(body []byte) (userId int64, roomId int64, err error)
 }
 
 type DefaultAuther struct {
@@ -35,14 +36,15 @@ func NewDefaultAuther() *DefaultAuther {
 	return a
 }
 
-func (a *DefaultAuther) Auth(token string) (userId int64, roomId int64, err error) {
-	log.Info("Auth enter. token is %s", token)
+func (a *DefaultAuther) Auth(body []byte) (userId int64, roomId int64, err error) {
+	log.Info("Auth enter. body is \n%s", hex.Dump(body))
 	var appId int64 = 0
 	userId = 0
 	roomId = define.NoRoom
 	defer func() {
 		log.Info("Auth return. appId is %v, userId is %v, roomId is %v", appId, userId, roomId)
 	}()
+	/*
 	if len(token) < 2 {
 		return
 	}
@@ -63,6 +65,29 @@ func (a *DefaultAuther) Auth(token string) (userId int64, roomId int64, err erro
 	if len(triple) > 3 {
 		ticket := triple[3]
 		if err = a.verify(ticket, userId); err != nil {
+			return
+		}
+	}
+	*/
+	tag := proto.TCPToRPC{}
+	input := proto.RPCInput{}
+	if input, err =  tag.Decode(body); err != nil {
+		log.Error("Auth body is not a valid protobuf: %v", err)
+		return
+	}
+	log.Info("Auth body parsed: %v", input)
+	if _, ok := input.Opt["appid"]; ok {
+		if appId, err = strconv.ParseInt(input.Opt["appid"], 10, 16); err != nil {
+			return
+		}
+	}
+	if _, ok := input.Opt["uid"]; ok {
+		if userId, err = strconv.ParseInt(input.Opt["uid"], 10, 48); err != nil {
+			return
+		}
+	}
+	if _, ok := input.Opt["roomid"]; ok {
+		if roomId, err = strconv.ParseInt(input.Opt["roomid"], 10, 48); err != nil {
 			return
 		}
 	}

@@ -1,7 +1,7 @@
 package proto
 
 type ConnArg struct {
-	Token  string
+	Body   []byte
 	Server int32
 }
 
