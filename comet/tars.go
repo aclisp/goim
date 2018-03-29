@@ -62,6 +62,9 @@ type RPCOutput struct {
 	Ret  int32             `protobuf:"zigzag32,1,opt,name=ret" json:"ret,omitempty"`
 	Rsp  json.RawMessage   `protobuf:"bytes,2,opt,name=rsp,proto3" json:"rsp,omitempty"`
 	Opt  map[string]string `protobuf:"bytes,3,rep,name=opt" json:"opt,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Desc string            `protobuf:"bytes,4,opt,name=desc" json:"desc,omitempty"`
+	Obj  string            `protobuf:"bytes,5,opt,name=obj" json:"obj,omitempty"`
+	Func string            `protobuf:"bytes,6,opt,name=func" json:"func,omitempty"`
 }
 
 func (m *RPCOutput) Reset()                    { *m = RPCOutput{} }
@@ -123,6 +126,9 @@ func invoke(comm *servant.Communicator, input RPCInput) (output RPCOutput, err e
 	output.Ret = rpcResp.IRet
 	output.Rsp = rpcResp.SBuffer
 	output.Opt = rpcResp.Context
+	output.Desc = rpcResp.SResultDesc
+	output.Obj = input.Obj
+	output.Func = input.Func
 	return
 }
 
@@ -134,6 +140,7 @@ func (ws WebsocketToRPC) Encode(output RPCOutput) (body json.RawMessage, err err
 	log.Debug("rpc.ret = %d", output.Ret)
 	log.Debug("rpc.rsp = \n%s", hex.Dump(output.Rsp))
 	log.Debug("rpc.opt = %v", output.Opt)
+	log.Debug("rpc.desc = %s", output.Desc)
 	output.Rsp = []byte(`"` + base64.StdEncoding.EncodeToString(output.Rsp) + `"`)
 	if body, err = json.Marshal(output); err != nil {
 		log.Error("can not encode rpc output to json: %v", err)
@@ -173,6 +180,7 @@ func (t TCPToRPC) Encode(output RPCOutput) (body json.RawMessage, err error) {
 	log.Debug("rpc.ret = %d", output.Ret)
 	log.Debug("rpc.rsp = \n%s", hex.Dump(output.Rsp))
 	log.Debug("rpc.opt = %v", output.Opt)
+	log.Debug("rpc.desc = %s", output.Desc)
 	if body, err = pb.Marshal(&output); err != nil {
 		log.Error("can not encode rpc output to protobuf: %v", err)
 		return
