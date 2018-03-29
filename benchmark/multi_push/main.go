@@ -4,7 +4,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,6 +14,7 @@ import (
 	"runtime"
 	"strconv"
 	"time"
+	pb "github.com/golang/protobuf/proto"
 )
 
 var (
@@ -25,10 +25,28 @@ var (
 
 const TestContent = "{\"test\":1}"
 
-type pushsBodyMsg struct {
-	Msg     json.RawMessage `json:"m"`
-	UserIds []int64         `json:"u"`
+type ServerPush struct {
+	MessageType int32             `protobuf:"zigzag32,1,opt,name=messageType" json:"messageType,omitempty"`
+	PushBuffer  []byte            `protobuf:"bytes,2,opt,name=pushBuffer,proto3" json:"pushBuffer,omitempty"`
+	Headers     map[string]string `protobuf:"bytes,3,rep,name=headers" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	MessageDesc string            `protobuf:"bytes,4,opt,name=messageDesc" json:"messageDesc,omitempty"`
+	ServiceName string            `protobuf:"bytes,5,opt,name=serviceName" json:"serviceName,omitempty"`
+	MethodName  string            `protobuf:"bytes,6,opt,name=methodName" json:"methodName,omitempty"`
 }
+
+func (m *ServerPush) Reset()                    { *m = ServerPush{} }
+func (m *ServerPush) String() string            { return pb.CompactTextString(m) }
+func (*ServerPush) ProtoMessage()               {}
+
+type MultiPush struct {
+	Msg     *ServerPush `protobuf:"bytes,1,opt,name=msg" json:"msg,omitempty"`
+	UserIDs []int64     `protobuf:"varint,2,rep,packed,name=userIDs" json:"userIDs,omitempty"`
+	AppID   int32       `protobuf:"varint,3,opt,name=appID" json:"appID,omitempty"`
+}
+
+func (m *MultiPush) Reset()                    { *m = MultiPush{} }
+func (m *MultiPush) String() string            { return pb.CompactTextString(m) }
+func (*MultiPush) ProtoMessage()               {}
 
 func init() {
 	httpTransport := &http.Transport{
@@ -97,8 +115,13 @@ func startPush(b, e int) {
 	for i := b; i < e; i++ {
 		l = append(l, int64(i))
 	}
-	msg := &pushsBodyMsg{Msg: json.RawMessage(TestContent), UserIds: l}
-	body, err := json.Marshal(msg)
+	msg := &MultiPush{
+		Msg: &ServerPush{
+			PushBuffer: []byte("abc"),
+		},
+		UserIDs: l,
+	}
+	body, err := pb.Marshal(msg)
 	if err != nil {
 		panic(err)
 	}

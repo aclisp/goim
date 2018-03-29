@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	inet "goim/libs/net"
+	"goim/libs/proto"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -10,7 +11,7 @@ import (
 	"time"
 
 	log "github.com/thinkboy/log4go"
-	"goim/libs/proto"
+	pb "github.com/golang/protobuf/proto"
 )
 
 func InitHTTP() (err error) {
@@ -132,18 +133,44 @@ type pushsBodyMsg struct {
 }
 
 func parsePushsBody(body []byte) (msg []byte, userIds []int64, err error) {
-	tmp := pushsBodyMsg{}
-	if err = json.Unmarshal(body, &tmp); err != nil {
+	tmp := MultiPush{}
+	if err = pb.Unmarshal(body, &tmp); err != nil {
 		return
 	}
-	msg = tmp.Msg
-	for _, userId := range tmp.UserIds {
-		userIds = append(userIds, (int64(tmp.AppId)<<48)|userId)
+	if msg, err = pb.Marshal(tmp.Msg); err != nil {
+		return
+	}
+	for _, userId := range tmp.UserIDs {
+		userIds = append(userIds, (int64(tmp.AppID)<<48)|userId)
 	}
 	return
 }
 
 // {"m":{"test":1},"u":"1,2,3","a":1}
+
+type ServerPush struct {
+	MessageType int32             `protobuf:"zigzag32,1,opt,name=messageType" json:"messageType,omitempty"`
+	PushBuffer  []byte            `protobuf:"bytes,2,opt,name=pushBuffer,proto3" json:"pushBuffer,omitempty"`
+	Headers     map[string]string `protobuf:"bytes,3,rep,name=headers" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	MessageDesc string            `protobuf:"bytes,4,opt,name=messageDesc" json:"messageDesc,omitempty"`
+	ServiceName string            `protobuf:"bytes,5,opt,name=serviceName" json:"serviceName,omitempty"`
+	MethodName  string            `protobuf:"bytes,6,opt,name=methodName" json:"methodName,omitempty"`
+}
+
+func (m *ServerPush) Reset()                    { *m = ServerPush{} }
+func (m *ServerPush) String() string            { return pb.CompactTextString(m) }
+func (*ServerPush) ProtoMessage()               {}
+
+type MultiPush struct {
+	Msg     *ServerPush `protobuf:"bytes,1,opt,name=msg" json:"msg,omitempty"`
+	UserIDs []int64     `protobuf:"varint,2,rep,packed,name=userIDs" json:"userIDs,omitempty"`
+	AppID   int32       `protobuf:"varint,3,opt,name=appID" json:"appID,omitempty"`
+}
+
+func (m *MultiPush) Reset()                    { *m = MultiPush{} }
+func (m *MultiPush) String() string            { return pb.CompactTextString(m) }
+func (*MultiPush) ProtoMessage()               {}
+
 func Pushs(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Method Not Allowed", 405)
@@ -165,7 +192,7 @@ func Pushs(w http.ResponseWriter, r *http.Request) {
 		res["ret"] = InternalErr
 		return
 	}
-	body = string(bodyBytes)
+	body = "<protobuf bytes>"
 	if bodyBytes, userIds, err = parsePushsBody(bodyBytes); err != nil {
 		log.Error("parsePushsBody(\"%s\") error(%s)", body, err)
 		res["ret"] = InternalErr
