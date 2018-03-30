@@ -18,6 +18,8 @@ const (
 type Operator interface {
 	// Operate process the common operation such as send message etc.
 	Operate(*proto.Proto, ConnType) error
+	// Direct is a temp method only used to quick enter room.
+	Direct(proto.RPCInput, ConnType) (proto.RPCOutput, error)
 	// Connect used for auth user and return a subkey, roomid, hearbeat.
 	Connect(*proto.Proto) (string, int64, time.Duration, error)
 	// Disconnect used for revoke the subkey.
@@ -59,7 +61,7 @@ func (operator *DefaultOperator) Operate(p *proto.Proto, connType ConnType) erro
 		}
 		output, err := invoker.Invoke(input)
 		if err != nil {
-			return err
+			//return err
 		}
 		p.Body, err = invoker.Encode(output)
 		if err != nil {
@@ -74,6 +76,19 @@ func (operator *DefaultOperator) Operate(p *proto.Proto, connType ConnType) erro
 		return ErrOperation
 	}
 	return nil
+}
+
+func (operator * DefaultOperator) Direct(input proto.RPCInput, connType ConnType) (output proto.RPCOutput, err error) {
+	var (
+		invoker proto.RPCInvoker
+	)
+	if connType == TCPConn {
+		invoker = operator.TCPToRPC
+	} else {
+		invoker = operator.WebsocketToRPC
+	}
+	output, err = invoker.Invoke(input)
+	return
 }
 
 func (operator *DefaultOperator) Connect(p *proto.Proto) (key string, rid int64, heartbeat time.Duration, err error) {

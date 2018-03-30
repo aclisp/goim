@@ -75,18 +75,18 @@ func (a *DefaultAuther) Auth(body []byte) (userId int64, roomId int64, err error
 		log.Error("Auth body is not a valid protobuf: %v", err)
 		return
 	}
-	if _, ok := input.Opt["appid"]; ok {
-		if appId, err = strconv.ParseInt(input.Opt["appid"], 10, 16); err != nil {
+	if _, ok := input.Opt[define.AppID]; ok {
+		if appId, err = strconv.ParseInt(input.Opt[define.AppID], 10, 16); err != nil {
 			return
 		}
 	}
-	if _, ok := input.Opt["uid"]; ok {
-		if userId, err = strconv.ParseInt(input.Opt["uid"], 10, 48); err != nil {
+	if _, ok := input.Opt[define.UID]; ok {
+		if userId, err = strconv.ParseInt(input.Opt[define.UID], 10, 48); err != nil {
 			return
 		}
 	}
-	if _, ok := input.Opt["roomid"]; ok {
-		if roomId, err = strconv.ParseInt(input.Opt["roomid"], 10, 48); err != nil {
+	if _, ok := input.Opt[define.SubscribeRoom]; ok {
+		if roomId, err = strconv.ParseInt(input.Opt[define.SubscribeRoom], 10, 48); err != nil {
 			return
 		}
 	}

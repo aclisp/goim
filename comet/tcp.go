@@ -8,6 +8,7 @@ import (
 	"goim/libs/proto"
 	itime "goim/libs/time"
 	"net"
+	"strconv"
 	"time"
 
 	log "github.com/thinkboy/log4go"
@@ -164,11 +165,16 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 				log.Debug("%p key: %s receive heartbeat", conn, key)
 			}
 		} else if p.Operation == define.OP_ROOM_CHANGE {
-			var ret int
-			var msg string
-			if rid, err := parseRoomId(string(p.Body)); err != nil {
+			var (
+				ret    int
+				msg    string
+				rid    int64
+				input  proto.RPCInput
+				output proto.RPCOutput
+			)
+			if rid, input, err = tcpParseRoomId(p.Body); err != nil {
 				ret = 1
-				msg = fmt.Sprintf("invalid roomid: %s", p.Body)
+				msg = fmt.Sprintf("invalid roomid: %v", err)
 			} else if orid, err := b.Change(key, rid); err != nil {
 				ret = 2
 				msg = fmt.Sprintf("change roomid %d->%d err: %v", orid, rid, err)
@@ -177,7 +183,17 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 				msg = fmt.Sprintf("change roomid %d->%d ok", orid, rid)
 				server.operator.ChangeRoom(key, orid, rid)
 			}
-			p.Body = []byte(fmt.Sprintf(`{"ret":%d,"msg":%q}`, ret, msg))
+			if len(input.Obj) > 0 {
+				output, err = server.operator.Direct(input, TCPConn)
+				if err != nil {
+					ret = 3
+					msg = fmt.Sprintf("call downstream service %q.%q err: %v", input.Obj, input.Func, err)
+				}
+			}
+			output.Ret = int32(ret)
+			output.Desc = msg
+			tag := proto.TCPToRPC{}
+			p.Body, _ = tag.Encode(output)
 			p.Operation = define.OP_ROOM_CHANGE_REPLY
 		} else {
 			if err = server.operator.Operate(p, TCPConn); err != nil {
@@ -360,5 +376,30 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 	err = wr.Flush()
 	log.Debug("%p Tx %s tcp auth %+v", conn, key, p)
 	p.Body = nil
+	return
+}
+
+func tcpParseRoomId(body []byte) (rid int64, input proto.RPCInput, err error) {
+	var appId int64 = 0
+	tag := proto.TCPToRPC{}
+	input, err = tag.Decode(body)
+	if err != nil {
+		err = fmt.Errorf("body is not a valid protobuf: %v", err)
+		return
+	}
+	if _, ok := input.Opt[define.SubscribeRoom]; !ok {
+		err = fmt.Errorf("need header %q", define.SubscribeRoom)
+		return
+	}
+	if rid, err = strconv.ParseInt(input.Opt[define.SubscribeRoom], 10, 48); err != nil {
+		err = fmt.Errorf("header %q is not integer: %v", define.SubscribeRoom, err)
+		return
+	}
+	if _, ok := input.Opt[define.AppID]; ok {
+		if appId, err = strconv.ParseInt(input.Opt[define.AppID], 10, 16); err != nil {
+			return
+		}
+	}
+	rid = (appId << 48) | rid
 	return
 }
