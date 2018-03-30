@@ -288,6 +288,29 @@ func startTcpClient(key string) {
 				seqId++
 			}
 			queryUserAttentionList()
+			// test change room
+			changeRoom := func() {
+				in := RPCInput{}
+				in.Headers = map[string]string{
+					"subscribe-room-push": "10",
+				}
+				inBuf, err := pb.Marshal(&in)
+				if err != nil {
+					log.Error("key:%s pb.Marshal(%v) error(%v)", key, in, err)
+					return
+				}
+				// send
+				proto1.Operation = OP_ROOM_CHANGE
+				proto1.SeqId = seqId
+				proto1.Body = inBuf
+				if err = tcpWriteProto(wr, proto1); err != nil {
+					log.Error("key:%s tcpWriteProto(changeRoom) error(%v)", key, err)
+					return
+				}
+				log.Debug("key:%s tcp write changeRoom", key)
+				seqId++
+			}
+			changeRoom()
 			select {
 			case <-quit:
 				return
@@ -318,19 +341,33 @@ func startTcpClient(key string) {
 			err = pb.Unmarshal(proto.Body, &out)
 			if err != nil {
 				log.Error("key:%s tcp receive OP_SEND_SMS_REPLY error(%v)", key, err)
-				return
+				continue
 			}
 			// inner packet
 			rsp := PQueryUserAttentionListRsp{}
 			err = pb.Unmarshal(out.ResponseBuffer, &rsp)
 			if err != nil {
 				log.Error("key:%s tcp receive OP_SEND_SMS_REPLY error(%v)", key, err)
-				return
+				continue
 			}
-			log.Debug("key:%s tcp queryUserAttentionList msg: %v", key, rsp)
+			log.Debug("key:%s tcp queryUserAttentionList msg: %+v", key, rsp)
 		} else if proto.Operation == OP_SEND_SMS_REPLY {
-			log.Info("key:%s tcp msg: %s", key, string(proto.Body))
+			push := ServerPush{}
+			err = pb.Unmarshal(proto.Body, &push)
+			if err != nil {
+				log.Error("key:%s tcp receive server push error(%v)", key, err)
+				continue
+			}
+			log.Info("key:%s tcp push msg: %+v", key, push)
 			atomic.AddInt64(&countDown, 1)
+		} else if proto.Operation == OP_ROOM_CHANGE_REPLY {
+			out := RPCOutput{}
+			err = pb.Unmarshal(proto.Body, &out)
+			if err != nil {
+				log.Error("key:%s tcp receive OP_ROOM_CHANGE_REPLY error(%v)", key, err)
+				continue
+			}
+			log.Info("key:%s tcp changeRoom msg: %+v", key, out)
 		}
 	}
 }
