@@ -124,10 +124,12 @@ func invoke(comm *servant.Communicator, input RPCInput) (output RPCOutput, err e
 		log.Error("%v", err)
 		output.Ret = 1
 		output.Desc = err.Error()
-	} else {
-		output.Ret = rpcResp.IRet
-		output.Desc = rpcResp.SResultDesc
+		output.Obj = input.Obj
+		output.Func = input.Func
+		return
 	}
+	output.Ret = rpcResp.IRet
+	output.Desc = rpcResp.SResultDesc
 	output.Rsp = rpcResp.SBuffer
 	output.Opt = rpcResp.Context
 	output.Obj = input.Obj
