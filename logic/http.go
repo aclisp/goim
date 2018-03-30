@@ -103,7 +103,7 @@ func Push(w http.ResponseWriter, r *http.Request) {
 		res["ret"] = InternalErr
 		return
 	}
-	body = string(bodyBytes)
+	body = "<protobuf bytes>"
 	if userId, err = strconv.ParseInt(uidStr, 10, 48); err != nil {
 		log.Error("strconv.Atoi(\"%s\") error(%v)", uidStr, err)
 		res["ret"] = InternalErr
@@ -229,7 +229,7 @@ func PushRoom(w http.ResponseWriter, r *http.Request) {
 		res["ret"] = InternalErr
 		return
 	}
-	body = string(bodyBytes)
+	body = "<protobuf bytes>"
 	ridStr := param.Get("rid")
 	enable, _ := strconv.ParseBool(param.Get("ensure"))
 	appidStr := param.Get("appid")
@@ -271,7 +271,7 @@ func PushAll(w http.ResponseWriter, r *http.Request) {
 		res["ret"] = InternalErr
 		return
 	}
-	body = string(bodyBytes)
+	body = "<protobuf bytes>"
 	// push all
 	if err := broadcastKafka(bodyBytes); err != nil {
 		log.Error("broadcastKafka(\"%s\") error(%s)", body, err)

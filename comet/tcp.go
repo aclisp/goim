@@ -313,6 +313,12 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 			return
 		}
 		log.Debug("Rx tcp auth %+v", p)
+		if p.Operation == define.OP_HEARTBEAT {
+			p.Body = nil
+			p.Operation = define.OP_HEARTBEAT_REPLY
+			p.WriteTCP(wr)
+			continue
+		}
 		if p.Operation != define.OP_AUTH {
 			log.Warn("auth operation not valid: %d", p.Operation)
 			continue
