@@ -85,7 +85,7 @@ func serveTCP(server *Server, conn *net.TCPConn, r int) {
 		rAddr = conn.RemoteAddr().String()
 	)
 	if Debug {
-		log.Debug("start tcp serve \"%s\" with \"%s\"", lAddr, rAddr)
+		log.Debug("%p start tcp serve \"%s\" with \"%s\"", conn, lAddr, rAddr)
 	}
 	server.serveTCP(conn, rp, wp, tr)
 }
@@ -114,7 +114,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 	})
 	// must not setadv, only used in auth
 	if p, err = ch.CliProto.Set(); err == nil {
-		if key, ch.RoomId, hb, err = server.authTCP(rr, wr, p); err == nil {
+		if key, ch.RoomId, hb, err = server.authTCP(rr, wr, p, conn); err == nil {
 			b = server.Bucket(key)
 			err = b.Put(key, ch)
 		}
@@ -124,7 +124,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 		rp.Put(rb)
 		wp.Put(wb)
 		tr.Del(trd)
-		log.Error("key: %s handshake failed error(%v)", key, err)
+		log.Error("%p key: %s handshake failed error(%v)", conn, key, err)
 		return
 	}
 	trd.Key = key
@@ -145,7 +145,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 		if err = p.ReadTCP(rr); err != nil {
 			break
 		}
-		log.Debug("Rx %s tcp serve %+v", key, p)
+		log.Debug("%p Rx %s tcp serve %+v", conn, key, p)
 		if white {
 			DefaultWhitelist.Log.Printf("key: %s read proto:%v\n", key, p)
 		}
@@ -153,7 +153,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 			p.Body = nil
 			p.Operation = define.OP_AUTH_REPLY
 			if Debug {
-				log.Debug("key: %s receive auth", key)
+				log.Debug("%p key: %s receive auth", conn, key)
 			}
 		} else if p.Operation == define.OP_HEARTBEAT {
 			tr.Set(trd, hb)
@@ -161,7 +161,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 			p.Body = nil
 			p.Operation = define.OP_HEARTBEAT_REPLY
 			if Debug {
-				log.Debug("key: %s receive heartbeat", key)
+				log.Debug("%p key: %s receive heartbeat", conn, key)
 			}
 		} else if p.Operation == define.OP_ROOM_CHANGE {
 			var ret int
@@ -197,7 +197,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 		DefaultWhitelist.Log.Printf("key: %s server tcp error(%v)\n", key, err)
 	}
 	if err != nil {
-		log.Error("key: %s server tcp failed error(%v)", key, err)
+		log.Error("%p key: %s server tcp failed error(%v)", conn, key, err)
 	}
 	b.Del(key)
 	tr.Del(trd)
@@ -205,13 +205,13 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 	conn.Close()
 	ch.Close()
 	if err = server.operator.Disconnect(key, ch.RoomId); err != nil {
-		log.Error("key: %s operator do disconnect error(%v)", key, err)
+		log.Error("%p key: %s operator do disconnect error(%v)", conn, key, err)
 	}
 	if white {
 		DefaultWhitelist.Log.Printf("key: %s disconnect error(%v)\n", key, err)
 	}
 	if Debug {
-		log.Debug("key: %s server tcp goroutine exit", key)
+		log.Debug("%p key: %s server tcp goroutine exit", conn, key)
 	}
 	return
 }
@@ -226,7 +226,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 		white  = DefaultWhitelist.Contains(key)
 	)
 	if Debug {
-		log.Debug("key: %s start dispatch tcp goroutine", key)
+		log.Debug("%p key: %s start dispatch tcp goroutine", conn, key)
 	}
 	for {
 		if white {
@@ -237,7 +237,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 			DefaultWhitelist.Log.Printf("key: %s proto ready\n", key)
 		}
 		if Debug {
-			log.Debug("key:%s dispatch msg:%v", key, *p)
+			log.Debug("%p key: %s dispatch msg: %+v", conn, key, *p)
 		}
 		switch p {
 		case proto.ProtoFinish:
@@ -245,7 +245,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 				DefaultWhitelist.Log.Printf("key: %s receive proto finish\n", key)
 			}
 			if Debug {
-				log.Debug("key: %s wakeup exit dispatch goroutine", key)
+				log.Debug("%p key: %s wakeup exit dispatch goroutine", conn, key)
 			}
 			finish = true
 			goto failed
@@ -262,7 +262,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 				if err = p.WriteTCP(wr); err != nil {
 					goto failed
 				}
-				log.Debug("Tx %s tcp dispatch %+v", key, p)
+				log.Debug("%p Tx %s tcp dispatch %+v", conn, key, p)
 				if white {
 					DefaultWhitelist.Log.Printf("key: %s write client proto%v\n", key, p)
 				}
@@ -277,7 +277,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 			if err = p.WriteTCP(wr); err != nil {
 				goto failed
 			}
-			log.Debug("Tx %s tcp dispatch %+v", key, p)
+			log.Debug("%p Tx %s tcp dispatch %+v", conn, key, p)
 			if white {
 				DefaultWhitelist.Log.Printf("key: %s write server proto%v\n", key, p)
 			}
@@ -298,7 +298,7 @@ failed:
 		DefaultWhitelist.Log.Printf("key: dispatch tcp error(%v)\n", key, err)
 	}
 	if err != nil {
-		log.Error("key: %s dispatch tcp error(%v)", key, err)
+		log.Error("%p key: %s dispatch tcp error(%v)", conn, key, err)
 	}
 	conn.Close()
 	wp.Put(wb)
@@ -307,28 +307,28 @@ failed:
 		finish = (ch.Ready() == proto.ProtoFinish)
 	}
 	if Debug {
-		log.Debug("key: %s dispatch goroutine exit", key)
+		log.Debug("%p key: %s dispatch goroutine exit", conn, key)
 	}
 	return
 }
 
 // auth for goim handshake with client, use rsa & aes.
-func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto) (key string, rid int64, heartbeat time.Duration, err error) {
+func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto, conn *net.TCPConn) (key string, rid int64, heartbeat time.Duration, err error) {
 	for {
 		if err = p.ReadTCP(rr); err != nil {
 			return
 		}
-		log.Debug("Rx tcp auth %+v", p)
+		log.Debug("%p Rx tcp auth %+v", conn, p)
 		if p.Operation == define.OP_HEARTBEAT {
 			p.Body = nil
 			p.Operation = define.OP_HEARTBEAT_REPLY
 			p.WriteTCP(wr)
 			wr.Flush()
-			log.Debug("Tx tcp auth %+v", p)
+			log.Debug("%p Tx tcp auth %+v", conn, p)
 			continue
 		}
 		if p.Operation != define.OP_AUTH {
-			log.Warn("auth operation not valid: %d", p.Operation)
+			log.Warn("%p auth operation not valid: %d", conn, p.Operation)
 			continue
 		}
 		break
@@ -344,7 +344,7 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 		p.Body, _ = tag.Encode(output)
 		p.WriteTCP(wr)
 		wr.Flush()
-		log.Debug("Tx tcp auth %+v", p)
+		log.Debug("%p Tx tcp auth %+v", conn, p)
 		p.Body = nil
 		return
 	}
@@ -358,7 +358,7 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 		return
 	}
 	err = wr.Flush()
-	log.Debug("Tx %s tcp auth %+v", key, p)
+	log.Debug("%p Tx %s tcp auth %+v", conn, key, p)
 	p.Body = nil
 	return
 }
