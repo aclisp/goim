@@ -317,6 +317,8 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 			p.Body = nil
 			p.Operation = define.OP_HEARTBEAT_REPLY
 			p.WriteTCP(wr)
+			wr.Flush()
+			log.Debug("Tx tcp auth %+v", p)
 			continue
 		}
 		if p.Operation != define.OP_AUTH {
