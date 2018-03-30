@@ -6,5 +6,5 @@ const (
 	UID = "uid"
 	AppID = "appid"
 	// 长连接鉴权时使用，切换房间时使用
-	SubscribeRoom = "subscribe-room"
+	SubscribeRoom = "subscribe-room-push"
 )
