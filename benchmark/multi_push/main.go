@@ -69,11 +69,11 @@ func init() {
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	infoLogfi, err := os.OpenFile("./multi_push.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	_, err := os.OpenFile("./multi_push.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		panic(err)
 	}
-	lg = log.New(infoLogfi, "", log.LstdFlags|log.Lshortfile)
+	lg = log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)
 
 	begin, err := strconv.Atoi(os.Args[1])
 	if err != nil {
@@ -88,7 +88,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
+/*
 	num := runtime.NumCPU() * 8
 
 	l := length / num
@@ -102,7 +102,8 @@ func main() {
 	if b < begin+length {
 		go startPush(b, begin+length)
 	}
-
+*/
+	go startPush(begin, begin+length)
 	time.Sleep(9999 * time.Hour)
 }
 
@@ -140,6 +141,8 @@ func startPush(b, e int) {
 		resp.Body.Close()
 
 		lg.Printf("response %s", string(body))
+		
+		time.Sleep(10 * time.Second)
 	}
 }
 
