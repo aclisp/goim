@@ -109,6 +109,9 @@ func Push(w http.ResponseWriter, r *http.Request) {
 		res["ret"] = InternalErr
 		return
 	}
+	if appidStr == "" {
+		appidStr = "0"
+	}
 	if appId, err = strconv.ParseInt(appidStr, 10, 16); err != nil {
 		log.Error("strconv.Atoi(\"%s\") error(%v)", appidStr, err)
 		res["ret"] = InternalErr
@@ -233,6 +236,9 @@ func PushRoom(w http.ResponseWriter, r *http.Request) {
 	ridStr := param.Get("rid")
 	enable, _ := strconv.ParseBool(param.Get("ensure"))
 	appidStr := param.Get("appid")
+	if appidStr == "" {
+		appidStr = "0"
+	}
 	// push room
 	if rid, err = strconv.ParseInt(ridStr, 10, 48); err != nil {
 		log.Error("strconv.Atoi(\"%s\") error(%v)", ridStr, err)
