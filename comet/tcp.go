@@ -149,7 +149,13 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 		if white {
 			DefaultWhitelist.Log.Printf("key: %s read proto:%v\n", key, p)
 		}
-		if p.Operation == define.OP_HEARTBEAT {
+		if p.Operation == define.OP_AUTH {
+			p.Body = nil
+			p.Operation = define.OP_AUTH_REPLY
+			if Debug {
+				log.Debug("key: %s receive auth", key)
+			}
+		} else if p.Operation == define.OP_HEARTBEAT {
 			tr.Set(trd, hb)
 			server.operator.Update(key, ch.RoomId)
 			p.Body = nil
