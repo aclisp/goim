@@ -75,7 +75,6 @@ func (a *DefaultAuther) Auth(body []byte) (userId int64, roomId int64, err error
 		log.Error("Auth body is not a valid protobuf: %v", err)
 		return
 	}
-	log.Info("Auth body parsed: %v", input)
 	if _, ok := input.Opt["appid"]; ok {
 		if appId, err = strconv.ParseInt(input.Opt["appid"], 10, 16); err != nil {
 			return
