@@ -14,6 +14,7 @@ import (
 
 	"git.apache.org/thrift.git/lib/go/thrift"
 	log "github.com/thinkboy/log4go"
+	pb "github.com/golang/protobuf/proto"
 )
 
 // developer could implement "Auth" interface for decide how get userId, or roomId
@@ -45,9 +46,8 @@ func (a *DefaultAuther) Auth(body []byte) (userId int64, roomId int64, err error
 	defer func() {
 		log.Info("Auth return. appId is %v, userId is %v, roomId is %v", appId, userId, roomId)
 	}()
-	tag := proto.TCPToRPC{}
 	input := proto.RPCInput{}
-	if input, err =  tag.Decode(body); err != nil {
+	if err =  pb.Unmarshal(body, &input); err != nil {
 		log.Warn("Auth body is not a valid protobuf: %v", err)
 		return a.authWithString(string(body))
 	}

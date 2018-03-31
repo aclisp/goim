@@ -192,7 +192,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 			}
 			output.Ret = int32(ret)
 			output.Desc = msg
-			tag := proto.TCPToRPC{}
+			tag := TCPToRPC{}
 			p.Body, _ = tag.Encode(output)
 			p.Operation = define.OP_ROOM_CHANGE_REPLY
 		} else {
@@ -356,7 +356,7 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 			Ret: 1,
 			Desc: err.Error(),
 		}
-		tag := proto.TCPToRPC{}
+		tag := TCPToRPC{}
 		p.Body, _ = tag.Encode(output)
 		p.WriteTCP(wr)
 		wr.Flush()
@@ -367,7 +367,7 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 	output := proto.RPCOutput{
 		Ret: 0,
 	}
-	tag := proto.TCPToRPC{}
+	tag := TCPToRPC{}
 	p.Body, _ = tag.Encode(output)
 	if err = p.WriteTCP(wr); err != nil {
 		p.Body = nil
@@ -381,7 +381,7 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 
 func tcpParseRoomId(body []byte) (rid int64, input proto.RPCInput, err error) {
 	var appId int64 = 0
-	tag := proto.TCPToRPC{}
+	tag := TCPToRPC{}
 	input, err = tag.Decode(body)
 	if err != nil {
 		err = fmt.Errorf("body is not a valid protobuf: %v", err)
