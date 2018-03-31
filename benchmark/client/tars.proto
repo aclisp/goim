@@ -26,3 +26,9 @@ message ServerPush {
     string serviceName    = 5;
     string methodName     = 6;
 }
+
+message MultiPush {
+    ServerPush msg         = 1;
+    repeated int64 userIDs = 2;
+    int32 appID            = 3;
+}
