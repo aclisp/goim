@@ -159,7 +159,7 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 		} else if p.Operation == define.OP_ROOM_CHANGE {
 			var ret int
 			var msg string
-			if rid, err := parseRoomId(string(p.Body)); err != nil {
+			if rid, err := websocketParseRoomId(string(p.Body)); err != nil {
 				ret = 1
 				msg = fmt.Sprintf("invalid roomid: %s", p.Body)
 			} else if orid, err := b.Change(key, rid); err != nil {
@@ -274,7 +274,7 @@ func (server *Server) authWebsocket(conn *websocket.Conn, p *proto.Proto) (key s
 	return
 }
 
-func parseRoomId(body string) (rid int64, err error) {
+func websocketParseRoomId(body string) (rid int64, err error) {
 	if len(body) < 2 {
 		err = errors.New("body is not json string")
 		return

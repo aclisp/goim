@@ -9,6 +9,7 @@ import (
 	"goim/libs/thriftpool"
 	"goim/logic/secuserinfo"
 	"strconv"
+	"strings"
 	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
@@ -44,7 +45,36 @@ func (a *DefaultAuther) Auth(body []byte) (userId int64, roomId int64, err error
 	defer func() {
 		log.Info("Auth return. appId is %v, userId is %v, roomId is %v", appId, userId, roomId)
 	}()
-	/*
+	tag := proto.TCPToRPC{}
+	input := proto.RPCInput{}
+	if input, err =  tag.Decode(body); err != nil {
+		log.Warn("Auth body is not a valid protobuf: %v", err)
+		return a.authWithString(string(body))
+	}
+	if _, ok := input.Opt[define.AppID]; ok {
+		if appId, err = strconv.ParseInt(input.Opt[define.AppID], 10, 16); err != nil {
+			return
+		}
+	}
+	if _, ok := input.Opt[define.UID]; ok {
+		if userId, err = strconv.ParseInt(input.Opt[define.UID], 10, 48); err != nil {
+			return
+		}
+	}
+	if _, ok := input.Opt[define.SubscribeRoom]; ok {
+		if roomId, err = strconv.ParseInt(input.Opt[define.SubscribeRoom], 10, 48); err != nil {
+			return
+		}
+	}
+	userId = (appId << 48) | userId
+	roomId = (appId << 48) | roomId
+	return
+}
+
+func (a *DefaultAuther) authWithString(token string) (userId int64, roomId int64, err error) {
+	var appId int64 = 0
+	userId = 0
+	roomId = define.NoRoom
 	if len(token) < 2 {
 		return
 	}
@@ -65,28 +95,6 @@ func (a *DefaultAuther) Auth(body []byte) (userId int64, roomId int64, err error
 	if len(triple) > 3 {
 		ticket := triple[3]
 		if err = a.verify(ticket, userId); err != nil {
-			return
-		}
-	}
-	*/
-	tag := proto.TCPToRPC{}
-	input := proto.RPCInput{}
-	if input, err =  tag.Decode(body); err != nil {
-		log.Error("Auth body is not a valid protobuf: %v", err)
-		return
-	}
-	if _, ok := input.Opt[define.AppID]; ok {
-		if appId, err = strconv.ParseInt(input.Opt[define.AppID], 10, 16); err != nil {
-			return
-		}
-	}
-	if _, ok := input.Opt[define.UID]; ok {
-		if userId, err = strconv.ParseInt(input.Opt[define.UID], 10, 48); err != nil {
-			return
-		}
-	}
-	if _, ok := input.Opt[define.SubscribeRoom]; ok {
-		if roomId, err = strconv.ParseInt(input.Opt[define.SubscribeRoom], 10, 48); err != nil {
 			return
 		}
 	}
