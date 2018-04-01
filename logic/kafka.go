@@ -59,6 +59,10 @@ func mpushKafka(serverId int32, keys []string, msg []byte) (err error) {
 		vBytes []byte
 		v      = &proto.KafkaMsg{OP: define.KAFKA_MESSAGE_MULTI, ServerId: serverId, SubKeys: keys, Msg: msg}
 	)
+	if !Conf.KafkaOpen {
+		err = push(v)
+		return
+	}
 	if vBytes, err = json.Marshal(v); err != nil {
 		return
 	}
@@ -71,6 +75,10 @@ func broadcastKafka(msg []byte) (err error) {
 		vBytes []byte
 		v      = &proto.KafkaMsg{OP: define.KAFKA_MESSAGE_BROADCAST, Msg: msg}
 	)
+	if !Conf.KafkaOpen {
+		err = push(v)
+		return
+	}
 	if vBytes, err = json.Marshal(v); err != nil {
 		return
 	}
@@ -84,6 +92,10 @@ func broadcastRoomKafka(rid int64, msg []byte, ensure bool) (err error) {
 		ridBytes [8]byte
 		v        = &proto.KafkaMsg{OP: define.KAFKA_MESSAGE_BROADCAST_ROOM, RoomId: rid, Msg: msg, Ensure: ensure}
 	)
+	if !Conf.KafkaOpen {
+		err = push(v)
+		return
+	}
 	if vBytes, err = json.Marshal(v); err != nil {
 		return
 	}

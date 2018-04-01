@@ -42,7 +42,12 @@ func main() {
 	MergeRoomServers()
 	go SyncRoomServers()
 	InitPush()
-	if err := InitKafka(); err != nil {
+	if Conf.KafkaOpen {
+		if err := InitKafka(); err != nil {
+			panic(err)
+		}
+	}
+	if err := InitRPC(); err != nil {
 		panic(err)
 	}
 	// block until a signal is received.

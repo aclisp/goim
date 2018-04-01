@@ -32,11 +32,17 @@ func main() {
 	if err := InitRPC(NewDefaultAuther()); err != nil {
 		panic(err)
 	}
+	// to job
+	if err := InitJobRpc(Conf.JobAddrs); err != nil {
+		log.Warn("job rpc current can't connect, retry")
+	}
 	if err := InitHTTP(); err != nil {
 		panic(err)
 	}
-	if err := InitKafka(Conf.KafkaAddrs); err != nil {
-		panic(err)
+	if Conf.KafkaOpen {
+		if err := InitKafka(Conf.KafkaAddrs); err != nil {
+			panic(err)
+		}
 	}
 	// block until a signal is received.
 	InitSignal()

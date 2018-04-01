@@ -48,7 +48,10 @@ type Config struct {
 	// router RPC
 	RouterRPCAddrs map[string]string `goconf:"-"`
 	// kafka
+	KafkaOpen  bool     `goconf:"kafka:open"`
 	KafkaAddrs []string `goconf:"kafka:addrs"`
+	// job
+	JobAddrs []string `goconf:"job:rpc.addrs:,"`
 	// monitor
 	MonitorOpen  bool     `goconf:"monitor:open"`
 	MonitorAddrs []string `goconf:"monitor:addrs:,"`

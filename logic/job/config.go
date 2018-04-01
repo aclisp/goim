@@ -21,6 +21,7 @@ func init() {
 
 type Config struct {
 	Log        string   `goconf:"base:log"`
+	KafkaOpen  bool     `goconf:"kafka:open"`
 	ZKAddrs    []string `goconf:"kafka:zookeeper.list:,"`
 	ZKRoot     string   `goconf:"kafka:zkroot"`
 	KafkaTopic string   `goconf:"kafka:topic"`
@@ -31,6 +32,7 @@ type Config struct {
 	// push
 	PushChan     int `goconf:"push:chan"`
 	PushChanSize int `goconf:"push:chan.size"`
+	PushBufSize  int `goconf:"push:buf.size"`
 	// timer
 	Timer     int `goconf:"timer:num"`
 	TimerSize int `goconf:"timer:size"`
@@ -40,6 +42,8 @@ type Config struct {
 	// monitor
 	MonitorOpen  bool     `goconf:"monitor:open"`
 	MonitorAddrs []string `goconf:"monitor:addrs:,"`
+	// rpc
+	RPCAddrs []string `goconf:"base:rpc.addrs:,"`
 }
 
 func NewConfig() *Config {
@@ -51,6 +55,7 @@ func NewConfig() *Config {
 		RoutineChan:  64,
 		PushChan:     4,
 		PushChanSize: 100,
+		PushBufSize:  1000,
 		//timer
 		// timer
 		Timer:     runtime.NumCPU(),
