@@ -311,7 +311,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 	}
 failed:
 	if white {
-		DefaultWhitelist.Log.Printf("key: dispatch tcp error(%v)\n", key, err)
+		DefaultWhitelist.Log.Printf("key: %s dispatch tcp error(%v)\n", key, err)
 	}
 	if err != nil {
 		log.Error("%p key: %s dispatch tcp error(%v)", conn, key, err)
@@ -353,7 +353,7 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 	p.Operation = define.OP_AUTH_REPLY
 	if err != nil {
 		output := proto.RPCOutput{
-			Ret: 1,
+			Ret:  1,
 			Desc: err.Error(),
 		}
 		tag := TCPToRPC{}
