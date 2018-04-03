@@ -9,6 +9,7 @@ import (
 	itime "goim/libs/time"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/thinkboy/log4go"
@@ -350,11 +351,15 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 		break
 	}
 	key, rid, heartbeat, err = server.operator.Connect(p)
+	anony := strings.HasPrefix(key, "0_")
 	p.Operation = define.OP_AUTH_REPLY
 	if err != nil {
 		output := proto.RPCOutput{
 			Ret:  1,
-			Desc: err.Error(),
+			Desc: "auth fail: " + err.Error(),
+			Opt: map[string]string{
+				"is-anonymous-user": strconv.FormatBool(anony),
+			},
 		}
 		tag := TCPToRPC{}
 		p.Body, _ = tag.Encode(output)
@@ -366,6 +371,10 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 	}
 	output := proto.RPCOutput{
 		Ret: 0,
+		Desc: "auth ok",
+		Opt: map[string]string{
+			"is-anonymous-user": strconv.FormatBool(anony),
+		},
 	}
 	tag := TCPToRPC{}
 	p.Body, _ = tag.Encode(output)
