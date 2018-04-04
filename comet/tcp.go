@@ -351,15 +351,22 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 		break
 	}
 	key, rid, heartbeat, err = server.operator.Connect(p)
-	anony := strings.HasPrefix(key, "0_")
+	appid, uid, connid := tcpParseKey(key)
+	anony := uid == 0
+	opt := map[string]string{
+		define.IsAnonymousUser:    strconv.FormatBool(anony),
+		define.UID:                strconv.FormatInt(uid, 10),
+		define.AppID:              strconv.FormatInt(appid, 10),
+		define.ConnID:             strconv.FormatInt(connid, 10),
+		define.SubscribeRoom:      strconv.FormatInt(rid, 10),
+		define.HeartbeatThreshold: heartbeat.String(),
+	}
 	p.Operation = define.OP_AUTH_REPLY
 	if err != nil {
 		output := proto.RPCOutput{
 			Ret:  1,
 			Desc: "auth fail: " + err.Error(),
-			Opt: map[string]string{
-				"is-anonymous-user": strconv.FormatBool(anony),
-			},
+			Opt:  opt,
 		}
 		tag := TCPToRPC{}
 		p.Body, _ = tag.Encode(output)
@@ -370,11 +377,9 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 		return
 	}
 	output := proto.RPCOutput{
-		Ret: 0,
+		Ret:  0,
 		Desc: "auth ok",
-		Opt: map[string]string{
-			"is-anonymous-user": strconv.FormatBool(anony),
-		},
+		Opt:  opt,
 	}
 	tag := TCPToRPC{}
 	p.Body, _ = tag.Encode(output)
@@ -410,5 +415,24 @@ func tcpParseRoomId(body []byte) (rid int64, input proto.RPCInput, err error) {
 		}
 	}
 	rid = (appId << 48) | rid
+	return
+}
+
+func tcpParseKey(key string) (appId, userId, connId int64) {
+	var (
+		idx int
+		err error
+	)
+	if idx = strings.IndexByte(key, '_'); idx == -1 {
+		return
+	}
+	if userId, err = strconv.ParseInt(key[:idx], 10, 64); err != nil {
+		return
+	}
+	if connId, err = strconv.ParseInt(key[idx+1:], 10, 32); err != nil {
+		return
+	}
+	appId = 0xFFFF & (userId >> 48)
+	userId = userId & 0xFFFFFFFFFFFF
 	return
 }
