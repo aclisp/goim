@@ -87,10 +87,10 @@ $ cp job-log.xml $GOPATH/bin/
 ### 五、启动goim
 ```sh
 $ cd /$GOPATH/bin
-nohup $GOPATH/bin/router -c $GOPATH/bin/router.conf 2>&1 > ~/panic-router.log &
-nohup $GOPATH/bin/logic -c $GOPATH/bin/logic.conf 2>&1 > ~/panic-logic.log &
-nohup $GOPATH/bin/comet -c $GOPATH/bin/comet.conf 2>&1 > ~/panic-comet.log &
-nohup $GOPATH/bin/job -c $GOPATH/bin/job.conf 2>&1 > ~/panic-job.log &
+nohup $GOPATH/bin/router -c $GOPATH/bin/router.conf > ~/panic-router.log 2>&1 &
+nohup $GOPATH/bin/logic -c $GOPATH/bin/logic.conf > ~/panic-logic.log 2>&1 &
+nohup $GOPATH/bin/comet -c $GOPATH/bin/comet.conf > ~/panic-comet.log 2>&1 &
+nohup $GOPATH/bin/job -c $GOPATH/bin/job.conf > ~/panic-job.log 2>&1 &
 
 ```
 如果启动失败，默认配置可通过查看panic-xxx.log日志文件来排查各个模块问题.

@@ -45,6 +45,9 @@ message RPCOutput {
     sint32 retCode        = 1;
     bytes  responseBuffer = 2;
     map<string, string> headers = 3;
+    string retDesc        = 4;
+    string serviceName    = 5;
+    string methodName     = 6;
 }
 ```
 
@@ -54,6 +57,9 @@ message ServerPush {
     sint32 messageType    = 1;
     bytes  pushBuffer     = 2;
     map<string, string> headers = 3;
+    string messageDesc    = 4;
+    string serviceName    = 5;
+    string methodName     = 6;
 }
 ```
 
@@ -98,7 +104,19 @@ message ServerPush {
 
 ### 认证消息格式
 
-`body` 为空，跳过认证
+长连接经过认证之后，才与uid建立对应关系，才能发送消息和接收推送。
+
+`body` 为空，使用匿名认证；
+`body` 不为空，需要填写 `RPCInput.headers`
+
+|header key|必选     |类型   |说明        | 
+| :-----   | :---   | :--- | :---       |
+|uid       | true   | uint | uid==0表示匿名认证，一般用于用户登录之前|
+|token     | true   | string|匿名是空，登录之后是账号系统的票据|
+|subscribe-room-push|false|int|是否订阅房间推送。-1表示取消订阅，其他值为房间号|
+
+认证返回的 `RPCOutput.retCode` 为0，则通过。否则失败，失败原因在 `RPCOutput.retDesc`。
+如果认证失败，服务器会关闭连接。
 
 ### 心跳消息格式
 
@@ -108,20 +126,46 @@ message ServerPush {
 
 目前业务消息转发到YYTars框架后端
 
-`requestBuffer`  是业务消息请求的protobuf编码
-`responseBuffer` 是业务消息应答的protobuf编码
+`serviceName` 和 `methodName` 用于后端服务的路由；
+`requestBuffer`  是业务消息请求的protobuf编码；
+`responseBuffer` 是业务消息应答的protobuf编码。
+
+业务消息带有这些 `RPCInput.headers` 
+
+|header key|必选     |类型   |说明        | 
+| :-----   | :---   | :--- | :---       |
+|is-anonymous-user|true|bool|是否是匿名用户，即uid==0|
+|uid       | false   | uint | 当前连接对应的uid|
+|connid    | false   | uint | 区分同一个uid的多条连接（多设备登录） |
+|subscribe-room-push|false|int|当前连接订阅的房间推送。-1表示没有订阅，其他值为房间号|
+|heartbeat-threshold|false|string|最长心跳间隔，客户端超过这个时间不发心跳，服务端会关闭连接|
+|client-ip|false          |string|客户端IP|
+|client-port|false        |uint  |客户端PORT|
+|access-point-ip|false    |string|接入点IP|
+|access-point-port|false  |uint  |接入点PORT|
+
+注意：业务相关headers，推荐用大写，不要覆盖这些key。
 
 ### 切换房间消息格式
 
-TODO
+长连接建立之后，可以订阅、取消订阅房间推送。需要填写 `RPCInput.headers`
+
+|header key|必选     |类型   |说明        | 
+| :-----   | :---   | :--- | :---       |
+|subscribe-room-push|true|int|-1表示取消订阅，其他值为房间号|
+
+注意：如果 `RPCInput.serviceName` 不为空，则会调用下游服务，用于业务相关的直播间状态管理。
 
 ### 推送消息格式
 
-推送消息只有下行，其中 `body` 为业务自定义，一般是json
+推送消息只有下行，其中 `body` 为 protobuf 编码的 `ServerPush`。业务使用
+`ServerPush.messageType` 识别内层的 `pushBuffer`
 
 ## 触发推送消息
 
-业务向推送 URL 发送 POST http
+业务向推送 URL 发送 POST http。
+POST body 为 protobuf 编码的 `ServerPush`。
+POST Content-Type 为 `application/x-protobuf`
 
 ### 推送 URL
 
@@ -130,23 +174,33 @@ http://test-goim.yy.com:7172
 ### 房间推送
 
 ```
-curl -d "{\"test\": 12345}" 'http://test-goim.yy.com:7172/1/push/room?rid=20&appid=10001'
+curl -d "<protobuf bytes>" 'http://test-goim.yy.com:7172/1/push/room?rid=20'
 ``` 
 
 ### 广播
 
 ```
-curl -d "{\"test\": 12345}" 'http://test-goim.yy.com:7172/1/push/all'
+curl -d "<protobuf bytes>" 'http://test-goim.yy.com:7172/1/push/all'
 ```
 
 ### 单人推送
 
 ```
-curl -d "{\"test\":12345}" 'http://test-goim.yy.com:7172/1/push?uid=88889999&appid=10001'
+curl -d "<protobuf bytes>" 'http://test-goim.yy.com:7172/1/push?uid=88889999'
 ```
 
 ### 单消息多人推送
 
+可以批量向多个用户发推送消息。POST body 为 protobuf 编码的 `MultiPush`
+
+```protobuf
+message MultiPush {
+    ServerPush msg         = 1;
+    repeated int64 userIDs = 2;
+    int32 appID            = 3;
+}
 ```
-curl -d "{\"u\":[88889999,88889000],\"m\":{\"test\":12},\"a\":10001}" 'http://test-goim.yy.com:7172/1/pushs'
+
+```
+curl -d "<protobuf bytes>" 'http://test-goim.yy.com:7172/1/pushs'
 ```

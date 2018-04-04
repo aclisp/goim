@@ -65,5 +65,9 @@
     * router重启能重建在线用户
     * router支持在线扩容
     * comet重启，router能清理未下线用户
+    * comet上报自己的地址给router (#d4dd4a0)，可用来实现自定义DNS
+    * comet到logic负载均衡
+    * 适配Tecent Mars客户端框架
+    * 增加开关，可以不依赖Kafka和Zookeeper
 * goim在B站用于[推送弹幕](https://zhuanlan.zhihu.com/p/22016939)。无法保证[在线实时消息的可靠投递](http://www.52im.net/thread-294-1-1.html)。
 * 一条连接，只能在一个房间里。房间不等于[群聊](http://www.52im.net/thread-753-1-1.html)。
