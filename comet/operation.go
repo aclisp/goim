@@ -60,6 +60,9 @@ func (operator *DefaultOperator) Operate(p *proto.Proto, connType ConnType, optM
 			return err
 		}
 		for k, v := range optMerge {
+			if input.Opt == nil {
+				input.Opt = make(map[string]string, len(optMerge))
+			}
 			input.Opt[k] = v
 		}
 		output, err := invoker.Invoke(input)
@@ -91,6 +94,9 @@ func (operator * DefaultOperator) Direct(input proto.RPCInput, connType ConnType
 		invoker = operator.WebsocketToRPC
 	}
 	for k, v := range optMerge {
+		if input.Opt == nil {
+			input.Opt = make(map[string]string, len(optMerge))
+		}
 		input.Opt[k] = v
 	}
 	output, err = invoker.Invoke(input)
