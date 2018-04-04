@@ -171,10 +171,11 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 				ret    int
 				msg    string
 				rid    int64
+				appid  int64
 				input  proto.RPCInput
 				output proto.RPCOutput
 			)
-			if rid, input, err = tcpParseRoomId(p.Body); err != nil {
+			if rid, appid, input, err = tcpParseRoomId(p.Body); err != nil {
 				ret = 1
 				msg = fmt.Sprintf("invalid roomid: %v", err)
 			} else if orid, err := b.Change(key, rid); err != nil {
@@ -185,8 +186,8 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 				msg = fmt.Sprintf("change roomid %d->%d ok", orid, rid)
 				server.operator.ChangeRoom(key, orid, rid)
 				// update conn opt once change roomid ok
-				opt[define.AppID] = strconv.FormatInt(0xFFFF & (rid >> 48), 10)
-				opt[define.SubscribeRoom] = strconv.FormatInt(rid & 0xFFFFFFFFFFFF, 10)
+				opt[define.AppID] = strconv.FormatInt(appid, 10)
+				opt[define.SubscribeRoom] = strconv.FormatInt(int64(int32(rid & 0xFFFFFFFFFFFF)), 10)
 			}
 			if len(input.Obj) > 0 {
 				output, err = server.operator.Direct(input, TCPConn, opt)
@@ -371,7 +372,7 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 	opt[define.UID]                = strconv.FormatInt(uid, 10)
 	opt[define.AppID]              = strconv.FormatInt(appid, 10)
 	opt[define.ConnID]             = strconv.FormatInt(connid, 10)
-	opt[define.SubscribeRoom]      = strconv.FormatInt(rid & 0xFFFFFFFFFFFF, 10)
+	opt[define.SubscribeRoom]      = strconv.FormatInt(int64(int32(rid & 0xFFFFFFFFFFFF)), 10)
 	opt[define.HeartbeatThreshold] = heartbeat.String()
 	p.Operation = define.OP_AUTH_REPLY
 	if err != nil {
@@ -405,8 +406,7 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 	return
 }
 
-func tcpParseRoomId(body []byte) (rid int64, input proto.RPCInput, err error) {
-	var appId int64 = 0
+func tcpParseRoomId(body []byte) (rid, appid int64, input proto.RPCInput, err error) {
 	tag := TCPToRPC{}
 	input, err = tag.Decode(body)
 	if err != nil {
@@ -422,11 +422,11 @@ func tcpParseRoomId(body []byte) (rid int64, input proto.RPCInput, err error) {
 		return
 	}
 	if _, ok := input.Opt[define.AppID]; ok {
-		if appId, err = strconv.ParseInt(input.Opt[define.AppID], 10, 16); err != nil {
+		if appid, err = strconv.ParseInt(input.Opt[define.AppID], 10, 16); err != nil {
 			return
 		}
 	}
-	rid = (appId << 48) | rid
+	rid = (appid << 48) | rid
 	return
 }
 
