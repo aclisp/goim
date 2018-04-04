@@ -120,6 +120,7 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 		b   *Bucket
 		trd *itime.TimerData
 		ch  = NewChannel(server.Options.CliProto, server.Options.SvrProto, define.NoRoom)
+		opt = make(map[string]string, 16)
 	)
 	// handshake
 	trd = tr.Add(server.Options.HandshakeTimeout, func() {
@@ -174,7 +175,7 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 			p.Operation = define.OP_ROOM_CHANGE_REPLY
 		} else {
 			// process message
-			if err = server.operator.Operate(p, WebsocketConn); err != nil {
+			if err = server.operator.Operate(p, WebsocketConn, opt); err != nil {
 				break
 			}
 		}

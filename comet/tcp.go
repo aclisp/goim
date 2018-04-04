@@ -107,6 +107,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 		ch    = NewChannel(server.Options.CliProto, server.Options.SvrProto, define.NoRoom)
 		rr    = &ch.Reader
 		wr    = &ch.Writer
+		opt   = make(map[string]string, 16)
 	)
 	ch.Reader.ResetBuffer(conn, rb.Bytes())
 	ch.Writer.ResetBuffer(conn, wb.Bytes())
@@ -116,7 +117,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 	})
 	// must not setadv, only used in auth
 	if p, err = ch.CliProto.Set(); err == nil {
-		if key, ch.RoomId, hb, err = server.authTCP(rr, wr, p, conn); err == nil {
+		if key, ch.RoomId, hb, err = server.authTCP(rr, wr, p, conn, opt); err == nil {
 			b = server.Bucket(key)
 			err = b.Put(key, ch)
 		}
@@ -183,9 +184,12 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 				ret = 0
 				msg = fmt.Sprintf("change roomid %d->%d ok", orid, rid)
 				server.operator.ChangeRoom(key, orid, rid)
+				// update conn opt once change roomid ok
+				opt[define.AppID] = strconv.FormatInt(0xFFFF & (rid >> 48), 10)
+				opt[define.SubscribeRoom] = strconv.FormatInt(rid & 0xFFFFFFFFFFFF, 10)
 			}
 			if len(input.Obj) > 0 {
-				output, err = server.operator.Direct(input, TCPConn)
+				output, err = server.operator.Direct(input, TCPConn, opt)
 				if err != nil {
 					ret = 3
 					msg = fmt.Sprintf("call downstream service %q.%q err: %v", input.Obj, input.Func, err)
@@ -197,7 +201,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 			p.Body, _ = tag.Encode(output)
 			p.Operation = define.OP_ROOM_CHANGE_REPLY
 		} else {
-			if err = server.operator.Operate(p, TCPConn); err != nil {
+			if err = server.operator.Operate(p, TCPConn, opt); err != nil {
 				break
 			}
 		}
@@ -330,7 +334,7 @@ failed:
 }
 
 // auth for goim handshake with client, use rsa & aes.
-func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto, conn *net.TCPConn) (key string, rid int64, heartbeat time.Duration, err error) {
+func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto, conn *net.TCPConn, opt map[string]string) (key string, rid int64, heartbeat time.Duration, err error) {
 	for {
 		if err = p.ReadTCP(rr); err != nil {
 			return
@@ -353,14 +357,22 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 	key, rid, heartbeat, err = server.operator.Connect(p)
 	appid, uid, connid := tcpParseKey(key)
 	anony := uid == 0
-	opt := map[string]string{
-		define.IsAnonymousUser:    strconv.FormatBool(anony),
-		define.UID:                strconv.FormatInt(uid, 10),
-		define.AppID:              strconv.FormatInt(appid, 10),
-		define.ConnID:             strconv.FormatInt(connid, 10),
-		define.SubscribeRoom:      strconv.FormatInt(rid, 10),
-		define.HeartbeatThreshold: heartbeat.String(),
+	var laddr, raddr *net.TCPAddr
+	var ok bool
+	if laddr, ok = conn.LocalAddr().(*net.TCPAddr); ok {
+		opt[define.AccessPointIP]   = laddr.IP.String()
+		opt[define.AccessPointPort] = strconv.Itoa(laddr.Port)
 	}
+	if raddr, ok = conn.RemoteAddr().(*net.TCPAddr); ok {
+		opt[define.ClientIP]   = raddr.IP.String()
+		opt[define.ClientPort] = strconv.Itoa(raddr.Port)
+	}
+	opt[define.IsAnonymousUser]    = strconv.FormatBool(anony)
+	opt[define.UID]                = strconv.FormatInt(uid, 10)
+	opt[define.AppID]              = strconv.FormatInt(appid, 10)
+	opt[define.ConnID]             = strconv.FormatInt(connid, 10)
+	opt[define.SubscribeRoom]      = strconv.FormatInt(rid & 0xFFFFFFFFFFFF, 10)
+	opt[define.HeartbeatThreshold] = heartbeat.String()
 	p.Operation = define.OP_AUTH_REPLY
 	if err != nil {
 		output := proto.RPCOutput{

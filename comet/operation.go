@@ -17,9 +17,9 @@ const (
 
 type Operator interface {
 	// Operate process the common operation such as send message etc.
-	Operate(*proto.Proto, ConnType) error
+	Operate(*proto.Proto, ConnType, map[string]string) error
 	// Direct is a temp method only used to quick enter room.
-	Direct(proto.RPCInput, ConnType) (proto.RPCOutput, error)
+	Direct(proto.RPCInput, ConnType, map[string]string) (proto.RPCOutput, error)
 	// Connect used for auth user and return a subkey, roomid, hearbeat.
 	Connect(*proto.Proto) (string, int64, time.Duration, error)
 	// Disconnect used for revoke the subkey.
@@ -44,7 +44,7 @@ func NewOperator() Operator {
 	}
 }
 
-func (operator *DefaultOperator) Operate(p *proto.Proto, connType ConnType) error {
+func (operator *DefaultOperator) Operate(p *proto.Proto, connType ConnType, optMerge map[string]string) error {
 	var (
 		body []byte
 		invoker RPCInvoker
@@ -58,6 +58,9 @@ func (operator *DefaultOperator) Operate(p *proto.Proto, connType ConnType) erro
 		input, err := invoker.Decode(p.Body)
 		if err != nil {
 			return err
+		}
+		for k, v := range optMerge {
+			input.Opt[k] = v
 		}
 		output, err := invoker.Invoke(input)
 		if err != nil {
@@ -78,7 +81,7 @@ func (operator *DefaultOperator) Operate(p *proto.Proto, connType ConnType) erro
 	return nil
 }
 
-func (operator * DefaultOperator) Direct(input proto.RPCInput, connType ConnType) (output proto.RPCOutput, err error) {
+func (operator * DefaultOperator) Direct(input proto.RPCInput, connType ConnType, optMerge map[string]string) (output proto.RPCOutput, err error) {
 	var (
 		invoker RPCInvoker
 	)
@@ -86,6 +89,9 @@ func (operator * DefaultOperator) Direct(input proto.RPCInput, connType ConnType
 		invoker = operator.TCPToRPC
 	} else {
 		invoker = operator.WebsocketToRPC
+	}
+	for k, v := range optMerge {
+		input.Opt[k] = v
 	}
 	output, err = invoker.Invoke(input)
 	return
