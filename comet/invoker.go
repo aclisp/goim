@@ -88,26 +88,25 @@ func NewWebsocketToRPC() RPCInvoker {
 }
 
 func (ws WebsocketToRPC) Decode(body json.RawMessage) (input proto.RPCInput, err error) {
-	log.Debug("proto.body = \n%s", hex.Dump(body))
 	if err = json.Unmarshal(body, &input); err != nil {
-		log.Error("proto.body is not a valid json: %v", err)
+		log.Error("decode proto.body is not a valid json: %v", err)
 		return
 	}
-	log.Debug("rpc.obj = %s", input.Obj)
-	log.Debug("rpc.func = %s", input.Func)
+	log.Debug("decode rpc.obj = %s", input.Obj)
+	log.Debug("decode rpc.func = %s", input.Func)
 	if len(input.Req) < 2 {
-		err = fmt.Errorf("rpc.req is not a json string: %s", input.Req)
+		err = fmt.Errorf("decode rpc.req is not a json string: %s", input.Req)
 		log.Error("%v", err)
 		return
 	}
 	input.Req = input.Req[1:len(input.Req)-1]
 	if input.Req, err = base64.StdEncoding.DecodeString(string(input.Req)); err != nil {
-		err = fmt.Errorf("rpc.req can not be decode to hex: %s", input.Req)
+		err = fmt.Errorf("decode rpc.req can not be decode to hex: %s", input.Req)
 		log.Error("%v", err)
 		return
 	}
-	log.Debug("rpc.req = \n%s", hex.Dump(input.Req))
-	log.Debug("rpc.opt = %v", input.Opt)
+	log.Debug("decode rpc.req = \n%s", hex.Dump(input.Req))
+	log.Debug("decode rpc.opt = %v", input.Opt)
 	return
 }
 
@@ -116,10 +115,10 @@ func (ws WebsocketToRPC) Invoke(input proto.RPCInput) (output proto.RPCOutput, e
 }
 
 func (ws WebsocketToRPC) Encode(output proto.RPCOutput) (body json.RawMessage, err error) {
-	log.Debug("rpc.ret = %d", output.Ret)
-	log.Debug("rpc.rsp = \n%s", hex.Dump(output.Rsp))
-	log.Debug("rpc.opt = %v", output.Opt)
-	log.Debug("rpc.desc = %s", output.Desc)
+	log.Debug("encode rpc.ret = %d", output.Ret)
+	log.Debug("encode rpc.rsp = \n%s", hex.Dump(output.Rsp))
+	log.Debug("encode rpc.opt = %v", output.Opt)
+	log.Debug("encode rpc.desc = %s", output.Desc)
 	output.Rsp = []byte(`"` + base64.StdEncoding.EncodeToString(output.Rsp) + `"`)
 	if body, err = json.Marshal(output); err != nil {
 		log.Error("can not encode rpc output to json: %v", err)
@@ -139,15 +138,14 @@ func NewTCPToRPC() RPCInvoker {
 }
 
 func (t TCPToRPC) Decode(body json.RawMessage) (input proto.RPCInput, err error) {
-	log.Debug("proto.body = \n%s", hex.Dump(body))
 	if err = pb.Unmarshal(body, &input); err != nil {
-		log.Error("proto.body is not a valid protobuf: %v", err)
+		log.Error("decode proto.body is not a valid protobuf: %v", err)
 		return
 	}
-	log.Debug("rpc.obj = %s", input.Obj)
-	log.Debug("rpc.func = %s", input.Func)
-	log.Debug("rpc.req = \n%s", hex.Dump(input.Req))
-	log.Debug("rpc.opt = %v", input.Opt)
+	log.Debug("decode rpc.obj = %s", input.Obj)
+	log.Debug("decode rpc.func = %s", input.Func)
+	log.Debug("decode rpc.req = \n%s", hex.Dump(input.Req))
+	log.Debug("decode rpc.opt = %v", input.Opt)
 	return
 }
 
@@ -156,10 +154,10 @@ func (t TCPToRPC) Invoke(input proto.RPCInput) (output proto.RPCOutput, err erro
 }
 
 func (t TCPToRPC) Encode(output proto.RPCOutput) (body json.RawMessage, err error) {
-	log.Debug("rpc.ret = %d", output.Ret)
-	log.Debug("rpc.rsp = \n%s", hex.Dump(output.Rsp))
-	log.Debug("rpc.opt = %v", output.Opt)
-	log.Debug("rpc.desc = %s", output.Desc)
+	log.Debug("encode rpc.ret = %d", output.Ret)
+	log.Debug("encode rpc.rsp = \n%s", hex.Dump(output.Rsp))
+	log.Debug("encode rpc.opt = %v", output.Opt)
+	log.Debug("encode rpc.desc = %s", output.Desc)
 	if body, err = pb.Marshal(&output); err != nil {
 		log.Error("can not encode rpc output to protobuf: %v", err)
 		return
