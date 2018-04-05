@@ -23,18 +23,21 @@ type Auther interface {
 }
 
 type DefaultAuther struct {
-	pool thriftpool.Pool
+	udbService thriftpool.Pool
 }
 
 func NewDefaultAuther() *DefaultAuther {
-	p, err := thriftpool.NewChannelPool(0, 10000, createNewThriftConn)
+	udbService, err := thriftpool.NewChannelPool(0, 10000, createUDBServiceConn)
 	if err != nil {
 		log.Crashf("can not create thrift connection pool for udb auth: %v", err)
 	}
 	a := &DefaultAuther{
-		pool: p,
+		udbService: udbService,
 	}
-	go a.ping()
+	go thriftpool.Ping("udb", a.udbService, func(client interface{}) (err error){
+		_, err = client.(*secuserinfo.SecuserinfoServiceClient).LgSecuserinfoPing(context.TODO(), 0)
+		return
+	}, 10*time.Minute)
 	return a
 }
 
@@ -104,50 +107,36 @@ func (a *DefaultAuther) authWithString(token string) (userId int64, roomId int64
 }
 
 func (a *DefaultAuther) verify(ticket string, userId int64) (err error) {
-	conn, err := a.pool.Get()
-	if err != nil {
-		return
-	}
-	defer conn.Close()
-
-	client := conn.Client.(*secuserinfo.SecuserinfoServiceClient)
-	req := secuserinfo.NewVerifyAppTokenReqEx64()
+	var (
+		req *secuserinfo.VerifyAppTokenReqEx64
+		rsp *secuserinfo.VerifyAppTokenResEx64
+	)
+	req = secuserinfo.NewVerifyAppTokenReqEx64()
 	req.Context = "nouse"
 	req.Yyuid = userId
 	req.Token = ticket
 	req.Appid = "5060"   // 客户端SDK用这段代码获取票据 String ticket = AuthSDK.getToken("5060");
 	req.EncodingType = 2 // BASE64_WITH_URL = 2, // 最外层是URLs编码,其次是base64编码
-	r, err := client.LgSecuserinfoVerifyApptokenEx64(context.TODO(), req)
+	err = thriftpool.Invoke("udb", a.udbService, func(client interface{}) (err error){
+		rsp, err = client.(*secuserinfo.SecuserinfoServiceClient).LgSecuserinfoVerifyApptokenEx64(context.TODO(), req)
+		return
+	}, createUDBServiceConn)
 	if err != nil {
-		// close the socket that failed
-		conn.Conn.Close()
-		// reconnect the socket
-		if conn.Conn, err = createNewThriftConn(); err != nil {
-			log.Error("Reconnect with createNewThriftConn failed, server down: %v", err)
-			conn.MarkUnusable()
-			return
-		}
-		// retry on the newly connected socket
-		client = conn.Client.(*secuserinfo.SecuserinfoServiceClient)
-		r, err = client.LgSecuserinfoVerifyApptokenEx64(context.TODO(), req)
-		if err != nil {
-			log.Error("Failed after reconnect with createNewThriftConn: %v", err)
-			conn.MarkUnusable()
-			return
-		}
-	}
-	if r.Rescode != 101 { // SUI_VERIFY_SUCCESS = 101, // 票据验证成功
-		err = fmt.Errorf("got code %d: uid %d verify ticket", r.Rescode, userId)
+		log.Error("error calling LgSecuserinfoVerifyApptokenEx64: %v", err)
 		return
 	}
-	if r.Yyuid != req.Yyuid {
-		err = fmt.Errorf("uid mismatch: expect %d, got %d", req.Yyuid, r.Yyuid)
+	if rsp.Rescode != 101 { // SUI_VERIFY_SUCCESS = 101, // 票据验证成功
+		err = fmt.Errorf("got code %d: uid %d verify ticket", rsp.Rescode, userId)
+		return
+	}
+	if rsp.Yyuid != req.Yyuid {
+		err = fmt.Errorf("uid mismatch: expect %d, got %d", req.Yyuid, rsp.Yyuid)
 		return
 	}
 	return
 }
 
-func createNewThriftConn() (*thriftpool.Conn, error) {
+func createUDBServiceConn() (*thriftpool.Conn, error) {
 	var (
 		protocolFactory  thrift.TProtocolFactory
 		transportFactory thrift.TTransportFactory
@@ -177,29 +166,4 @@ func createNewThriftConn() (*thriftpool.Conn, error) {
 		Socket: transport,
 		Client: client,
 	}, nil
-}
-
-func (a *DefaultAuther) ping() {
-	var count int
-	for {
-		count = 0
-		n := a.pool.Len()
-		for i := 0; i < n; i++ {
-			conn, err := a.pool.Get()
-			if err != nil {
-				break
-			}
-			client := conn.Client.(*secuserinfo.SecuserinfoServiceClient)
-			_, err = client.LgSecuserinfoPing(context.TODO(), 0)
-			if err != nil {
-				count++
-				conn.MarkUnusable()
-			}
-			conn.Close()
-		}
-		if count > 0 {
-			log.Info("Removed %d stale thrift connection(s) out of %d in the pool", count, n)
-		}
-		time.Sleep(time.Minute * 10)
-	}
 }
