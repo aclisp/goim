@@ -120,7 +120,7 @@ func (a *DefaultAuther) verify(ticket string, userId int64) (err error) {
 	err = thriftpool.Invoke("udb", a.udbService, func(client interface{}) (err error){
 		rsp, err = client.(*secuserinfo.SecuserinfoServiceClient).LgSecuserinfoVerifyApptokenEx64(context.TODO(), req)
 		return
-	}, createUDBServiceConn)
+	})
 	if err != nil {
 		log.Error("error calling LgSecuserinfoVerifyApptokenEx64: %v", err)
 		return

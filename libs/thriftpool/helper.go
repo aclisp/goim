@@ -9,7 +9,7 @@ import (
 // Run accept the generic service client
 type Run func(interface{}) error
 
-func Invoke(prefix string, pool Pool, run Run, factory Factory) (err error) {
+func Invoke(prefix string, pool Pool, run Run) (err error) {
 	conn, err := pool.Get()
 	if err != nil {
 		log.Error("%q can not get thrift conn from pool: %v", prefix, err)
@@ -19,7 +19,7 @@ func Invoke(prefix string, pool Pool, run Run, factory Factory) (err error) {
 	err = run(conn.Client)
 	if err != nil {
 		conn.Conn.Close()                           // close the socket that failed
-		if conn.Conn, err = factory(); err != nil { // reconnect the socket
+		if conn.Conn, err = pool.(*channelPool).factory(); err != nil { // reconnect the socket
 			log.Error("%q reconnect failed, server down? %v", prefix, err)
 			conn.MarkUnusable()
 			return
