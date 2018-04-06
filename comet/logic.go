@@ -7,8 +7,9 @@ import (
 	"math/rand"
 	"time"
 
-	log "github.com/thinkboy/log4go"
 	"strings"
+
+	log "github.com/thinkboy/log4go"
 )
 
 var (
@@ -57,7 +58,7 @@ func getLogic() (c *xrpc.Clients, err error) {
 	n := len(logicServiceSet)
 	r := rand.Intn(n)
 	for i := 0; i < n; i++ {
-		c = logicServiceSet[r % n]
+		c = logicServiceSet[r%n]
 		if err = c.Available(); err == nil {
 			break
 		}
@@ -68,8 +69,8 @@ func getLogic() (c *xrpc.Clients, err error) {
 
 func connect(p *proto.Proto) (key string, rid int64, heartbeat time.Duration, err error) {
 	var (
-		arg   = proto.ConnArg{Body: p.Body, Server: Conf.ServerId}
-		reply = proto.ConnReply{}
+		arg    = proto.ConnArg{Body: p.Body, Server: Conf.ServerId}
+		reply  = proto.ConnReply{}
 		client *xrpc.Clients
 	)
 	if client, err = getLogic(); err != nil {
@@ -87,8 +88,8 @@ func connect(p *proto.Proto) (key string, rid int64, heartbeat time.Duration, er
 
 func disconnect(key string, roomId int64) (has bool, err error) {
 	var (
-		arg   = proto.DisconnArg{Key: key, RoomId: roomId}
-		reply = proto.DisconnReply{}
+		arg    = proto.DisconnArg{Key: key, RoomId: roomId}
+		reply  = proto.DisconnReply{}
 		client *xrpc.Clients
 	)
 	if client, err = getLogic(); err != nil {
@@ -104,8 +105,8 @@ func disconnect(key string, roomId int64) (has bool, err error) {
 
 func changeRoom(key string, orid int64, rid int64) (has bool, err error) {
 	var (
-		arg   = proto.ChangeRoomArg{Key: key, OldRoomId: orid, RoomId: rid}
-		reply = proto.ChangeRoomReply{}
+		arg    = proto.ChangeRoomArg{Key: key, OldRoomId: orid, RoomId: rid}
+		reply  = proto.ChangeRoomReply{}
 		client *xrpc.Clients
 	)
 	if client, err = getLogic(); err != nil {
@@ -120,8 +121,8 @@ func changeRoom(key string, orid int64, rid int64) (has bool, err error) {
 
 func update(key string, roomId int64) (err error) {
 	var (
-		arg   = proto.UpdateArg{Key: key, RoomId: roomId, Server: Conf.ServerId}
-		reply = proto.NoReply{}
+		arg    = proto.UpdateArg{Key: key, RoomId: roomId, Server: Conf.ServerId}
+		reply  = proto.NoReply{}
 		client *xrpc.Clients
 	)
 	if client, err = getLogic(); err != nil {
@@ -135,8 +136,8 @@ func update(key string, roomId int64) (err error) {
 
 func register() (err error) {
 	var (
-		arg   = proto.RegisterArg{Server: Conf.ServerId, Info: strings.Join(Conf.WebsocketTLSBind, ",")}
-		reply = proto.NoReply{}
+		arg    = proto.RegisterArg{Server: Conf.ServerId, Info: strings.Join(Conf.AdvertisedAddrs, ",")}
+		reply  = proto.NoReply{}
 		client *xrpc.Clients
 	)
 	if client, err = getLogic(); err != nil {

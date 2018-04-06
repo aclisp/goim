@@ -5,7 +5,8 @@ import (
 )
 
 func TestRound(t *testing.T) {
-	r := NewRound(10, 10, 2, 10)
+	options := RoundOptions{}
+	r := NewRound(options)
 	t0 := r.Timer(0)
 	if t0 == nil {
 		t.FailNow()

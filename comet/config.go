@@ -17,11 +17,15 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"io/ioutil"
+	"net"
 	"runtime"
 	"time"
 
 	"github.com/Terry-Mao/goconf"
+	log "github.com/thinkboy/log4go"
 )
 
 var (
@@ -46,6 +50,8 @@ type Config struct {
 	Debug     bool     `goconf:"base:debug"`
 	Whitelist []string `goconf:"base:white.list:,"`
 	WhiteLog  string   `goconf:"base:white.log"`
+	// for IaaS
+	AdvertisedAddrs []string `goconf:"base:advertised.addrs:,"`
 	// tcp
 	TCPBind         []string `goconf:"tcp:bind:,"`
 	TCPSndbuf       int      `goconf:"tcp:sndbuf:memory"`
@@ -153,6 +159,17 @@ func InitConfig() (err error) {
 		}
 		Conf.LogicAddrs[addr] = struct{}{}
 	}
+	if Conf.ServerId == 0 {
+		hostInfo, err := readHostInfo(YYMSHostInfo)
+		if err != nil {
+			log.Warn("Can not read the host info: %v", err)
+			return nil
+		}
+		Conf.ServerId = hostInfo.ServerID
+		if Conf.AdvertisedAddrs == nil {
+			Conf.AdvertisedAddrs = buildAdvertisedAddrs(hostInfo)
+		}
+	}
 	return nil
 }
 
@@ -167,4 +184,34 @@ func ReloadConfig() (*Config, error) {
 	}
 	gconf = ngconf
 	return conf, nil
+}
+
+const YYMSHostInfo = "/home/dspeak/yyms/hostinfo"
+
+type HostInfo struct {
+	ServerID int32 `json:"server_id"`
+	IPs      []struct {
+		IP  net.IP `json:"ip"`
+		ISP int    `json:"isp"`
+	} `json:"ips"`
+}
+
+func readHostInfo(filename string) (hostInfo *HostInfo, err error) {
+	content, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return
+	}
+	hostInfo = new(HostInfo)
+	err = json.Unmarshal(content, hostInfo)
+	return
+}
+
+func buildAdvertisedAddrs(hostInfo *HostInfo) (addrs []string) {
+	for _, v := range hostInfo.IPs {
+		if v.ISP == 10 || v.ISP == 11 { // 过滤内网(10)和管理网(11)
+			continue
+		}
+		addrs = append(addrs, v.IP.String())
+	}
+	return
 }

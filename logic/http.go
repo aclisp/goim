@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	log "github.com/thinkboy/log4go"
 	pb "github.com/golang/protobuf/proto"
+	log "github.com/thinkboy/log4go"
 )
 
 func InitHTTP() (err error) {
@@ -53,7 +53,7 @@ func httpListen(mux *http.ServeMux, network, addr string) {
 
 // retWrite marshal the result and write to client(get).
 func retWrite(w http.ResponseWriter, r *http.Request, res map[string]interface{}, start time.Time) {
-	data, err := json.Marshal(res)
+	data, err := json.MarshalIndent(res, "", "    ")
 	if err != nil {
 		log.Error("json.Marshal(\"%v\") error(%v)", res, err)
 		return
@@ -160,9 +160,9 @@ type ServerPush struct {
 	MethodName  string            `protobuf:"bytes,6,opt,name=methodName" json:"methodName,omitempty"`
 }
 
-func (m *ServerPush) Reset()                    { *m = ServerPush{} }
-func (m *ServerPush) String() string            { return pb.CompactTextString(m) }
-func (*ServerPush) ProtoMessage()               {}
+func (m *ServerPush) Reset()         { *m = ServerPush{} }
+func (m *ServerPush) String() string { return pb.CompactTextString(m) }
+func (*ServerPush) ProtoMessage()    {}
 
 type MultiPush struct {
 	Msg     *ServerPush `protobuf:"bytes,1,opt,name=msg" json:"msg,omitempty"`
@@ -170,9 +170,9 @@ type MultiPush struct {
 	AppID   int32       `protobuf:"varint,3,opt,name=appID" json:"appID,omitempty"`
 }
 
-func (m *MultiPush) Reset()                    { *m = MultiPush{} }
-func (m *MultiPush) String() string            { return pb.CompactTextString(m) }
-func (*MultiPush) ProtoMessage()               {}
+func (m *MultiPush) Reset()         { *m = MultiPush{} }
+func (m *MultiPush) String() string { return pb.CompactTextString(m) }
+func (*MultiPush) ProtoMessage()    {}
 
 func Pushs(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
@@ -332,11 +332,11 @@ func Session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var (
-		session   *proto.UserSession
-		err       error
-		userId    int64
-		uidStr    = r.URL.Query().Get("uid")
-		res       = map[string]interface{}{"ret": OK}
+		session *proto.UserSession
+		err     error
+		userId  int64
+		uidStr  = r.URL.Query().Get("uid")
+		res     = map[string]interface{}{"ret": OK}
 	)
 	defer retWrite(w, r, res, time.Now())
 	if userId, err = strconv.ParseInt(uidStr, 10, 64); err != nil {
@@ -363,9 +363,9 @@ func List(w http.ResponseWriter, r *http.Request) {
 		Comet  int32
 	}
 	var (
-		res       = map[string]interface{}{"ret": OK}
-		nodes     []Sessions
-		data      = map[string][]Session{}
+		res   = map[string]interface{}{"ret": OK}
+		nodes []Sessions
+		data  = map[string][]Session{}
 	)
 	defer retWrite(w, r, res, time.Now())
 	nodes, _ = listUserSession()
@@ -406,7 +406,7 @@ func DelServer(w http.ResponseWriter, r *http.Request) {
 		res["ret"] = InternalErr
 		return
 	}
-	defer retWrite(w, r, res, time.Now())
+	defer retPWrite(w, r, res, &serverStr, time.Now())
 	if err = delServer(int32(server)); err != nil {
 		res["ret"] = InternalErr
 		return
