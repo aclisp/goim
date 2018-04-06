@@ -58,11 +58,11 @@ func retWrite(w http.ResponseWriter, r *http.Request, res map[string]interface{}
 		log.Error("json.Marshal(\"%v\") error(%v)", res, err)
 		return
 	}
-	dataStr := string(data)
+	dataStr := string(data) + "\n"
 	if _, err := w.Write([]byte(dataStr)); err != nil {
 		log.Error("w.Write(\"%s\") error(%v)", dataStr, err)
 	}
-	log.Debug("req: \"%s\", get: res:\"%s\", ip:\"%s\", time:\"%fs\"", r.URL.String(), dataStr, r.RemoteAddr, time.Now().Sub(start).Seconds())
+	log.Debug("req: \"%s\", ip:\"%s\", time:\"%fs\"", r.URL.String(), r.RemoteAddr, time.Now().Sub(start).Seconds())
 }
 
 // retPWrite marshal the result and write to client(post).
@@ -401,12 +401,12 @@ func DelServer(w http.ResponseWriter, r *http.Request) {
 		server    int64
 		res       = map[string]interface{}{"ret": OK}
 	)
+	defer retPWrite(w, r, res, &serverStr, time.Now())
 	if server, err = strconv.ParseInt(serverStr, 10, 32); err != nil {
 		log.Error("strconv.Atoi(\"%s\") error(%v)", serverStr, err)
 		res["ret"] = InternalErr
 		return
 	}
-	defer retPWrite(w, r, res, &serverStr, time.Now())
 	if err = delServer(int32(server)); err != nil {
 		res["ret"] = InternalErr
 		return
