@@ -19,6 +19,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"runtime"
@@ -208,10 +209,8 @@ func readHostInfo(filename string) (hostInfo *HostInfo, err error) {
 
 func buildAdvertisedAddrs(hostInfo *HostInfo) (addrs []string) {
 	for _, v := range hostInfo.IPs {
-		if v.ISP == 10 || v.ISP == 11 { // 过滤内网(10)和管理网(11)
-			continue
-		}
-		addrs = append(addrs, v.IP.String())
+		a := fmt.Sprintf("%d=%s", v.ISP, v.IP)
+		addrs = append(addrs, a)
 	}
 	return
 }
