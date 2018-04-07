@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	log "github.com/thinkboy/log4go"
+	log "github.com/aclisp/log4go"
 	"strconv"
 	"fmt"
 	"strings"

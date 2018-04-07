@@ -5,7 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	log "github.com/thinkboy/log4go"
+	log "github.com/aclisp/log4go"
 )
 
 // InitSignal register signals handler.

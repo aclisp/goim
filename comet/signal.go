@@ -5,7 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	log "github.com/thinkboy/log4go"
+	log "github.com/aclisp/log4go"
 )
 
 // InitSignal register signals handler.
@@ -33,4 +33,10 @@ func reload() {
 		return
 	}
 	Conf = newConf
+	wl, err := NewWhitelist(Conf.WhiteLog, Conf.Whitelist)
+	if err != nil {
+		log.Error("NewWhitelist() error(%v)", err)
+		return
+	}
+	DefaultWhitelist = wl
 }

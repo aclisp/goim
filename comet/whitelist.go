@@ -1,30 +1,35 @@
 package main
 
 import (
-	"log"
-	"os"
+	"fmt"
 	"strings"
+
+	log "github.com/aclisp/log4go"
 )
 
 type Whitelist struct {
-	Log  *log.Logger
+	Log  log.Logger
 	list map[string]struct{} // whitelist for debug
 }
 
 // NewWhitelist a whitelist struct.
 func NewWhitelist(file string, list []string) (w *Whitelist, err error) {
-	var (
-		key string
-		f   *os.File
-	)
-	if f, err = os.OpenFile(file, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644); err == nil {
-		w = new(Whitelist)
-		w.Log = log.New(f, "", log.LstdFlags)
-		w.list = make(map[string]struct{})
-		for _, key = range list {
-			w.list[key] = struct{}{}
-		}
+	w = new(Whitelist)
+	w.Log = make(log.Logger)
+	w.list = make(map[string]struct{})
+	for _, key := range list {
+		w.list[key] = struct{}{}
 	}
+
+	flw := log.NewFileLogWriter(file, false)
+	if flw == nil {
+		err = fmt.Errorf("can not open file: %s", file)
+		return
+	}
+	flw.SetFormat("[%D %T] [%L] [%S] %M")
+	flw.SetRotateSize(100 * 1024 * 1024)
+	flw.SetRotate(true)
+	w.Log.AddFilter("file", log.INFO, flw)
 	return
 }
 
@@ -34,4 +39,8 @@ func (w *Whitelist) Contains(key string) (ok bool) {
 		_, ok = w.list[key[:ix]]
 	}
 	return
+}
+
+func (w *Whitelist) Close() {
+	w.Log.Close()
 }

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	log "github.com/thinkboy/log4go"
+	log "github.com/aclisp/log4go"
 )
 
 // StartPprof start http pprof.

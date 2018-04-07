@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 
-	log "github.com/thinkboy/log4go"
+	log "github.com/aclisp/log4go"
 )
 
 const (

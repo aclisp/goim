@@ -3,7 +3,7 @@ package main
 import (
 	"goim/libs/proto"
 
-	log "github.com/thinkboy/log4go"
+	log "github.com/aclisp/log4go"
 )
 
 type Ring struct {

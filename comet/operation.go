@@ -5,7 +5,7 @@ import (
 	"goim/libs/proto"
 	"time"
 
-	log "github.com/thinkboy/log4go"
+	log "github.com/aclisp/log4go"
 )
 
 type ConnType int

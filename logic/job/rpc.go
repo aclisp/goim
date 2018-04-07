@@ -6,7 +6,7 @@ import (
 	"net"
 	"net/rpc"
 
-	log "github.com/thinkboy/log4go"
+	log "github.com/aclisp/log4go"
 )
 
 func InitRPC() (err error) {

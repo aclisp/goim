@@ -11,7 +11,7 @@ import (
 	"code.yy.com/yytars/goframework/tars/servant"
 	"code.yy.com/yytars/goframework/jce/taf"
 	pb "github.com/golang/protobuf/proto"
-	log "github.com/thinkboy/log4go"
+	log "github.com/aclisp/log4go"
 )
 
 // setup yytars communicator

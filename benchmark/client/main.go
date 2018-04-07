@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	log "github.com/thinkboy/log4go"
+	log "github.com/aclisp/log4go"
 	"net/url"
 	"net"
 	pb "github.com/golang/protobuf/proto"

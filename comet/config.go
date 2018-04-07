@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/Terry-Mao/goconf"
-	log "github.com/thinkboy/log4go"
+	log "github.com/aclisp/log4go"
 )
 
 var (

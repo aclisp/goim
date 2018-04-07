@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	log "github.com/thinkboy/log4go"
+	log "github.com/aclisp/log4go"
 	"golang.org/x/net/websocket"
 )
 

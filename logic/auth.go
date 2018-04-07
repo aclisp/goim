@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
-	log "github.com/thinkboy/log4go"
+	log "github.com/aclisp/log4go"
 	pb "github.com/golang/protobuf/proto"
 )
 

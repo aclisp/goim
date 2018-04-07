@@ -6,7 +6,7 @@ import (
 	"goim/libs/proto"
 	"math/rand"
 
-	log "github.com/thinkboy/log4go"
+	log "github.com/aclisp/log4go"
 )
 
 type pushArg struct {
