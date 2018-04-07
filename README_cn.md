@@ -101,7 +101,11 @@ nohup $GOPATH/bin/job -c $GOPATH/bin/job.conf > ~/panic-job.log 2>&1 &
 
 ## 配置
 
-TODO
+1. 首先启动 router，无需配置
+1. 启动 logic，配置 router 的地址。logic 启动后会尝试连接 local job，连不上报错属正常。
+1. 启动 comet，配置 logic 的地址
+1. 利用 `curl <logic>:7172/1/count?type=server` 发现所有的 comet
+1. 启动 job，配置 comet 的地址
 
 ## 例子
 
