@@ -187,7 +187,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 				server.operator.ChangeRoom(key, orid, rid)
 				// update conn opt once change roomid ok
 				opt[define.AppID] = strconv.FormatInt(appid, 10)
-				opt[define.SubscribeRoom] = strconv.FormatInt(int64(int32(rid & 0xFFFFFFFFFFFF)), 10)
+				opt[define.SubscribeRoom] = strconv.FormatInt(int64(int32(rid&0xFFFFFFFFFFFF)), 10)
 			}
 			if len(input.Obj) > 0 {
 				output, err = server.operator.Direct(input, TCPConn, opt)
@@ -259,7 +259,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 			DefaultWhitelist.Log.Printf("key: %s proto ready\n", key)
 		}
 		if Debug {
-			log.Debug("%p key: %s dispatch msg: %+v", conn, key, *p)
+			log.Debug("%p key: %s dispatch msg: {Ver:%d Op:%d Seq:%d Body:%d}", conn, key, p.Ver, p.Operation, p.SeqId, len(p.Body))
 		}
 		switch p {
 		case proto.ProtoFinish:
@@ -361,18 +361,18 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 	var laddr, raddr *net.TCPAddr
 	var ok bool
 	if laddr, ok = conn.LocalAddr().(*net.TCPAddr); ok {
-		opt[define.AccessPointIP]   = laddr.IP.String()
+		opt[define.AccessPointIP] = laddr.IP.String()
 		opt[define.AccessPointPort] = strconv.Itoa(laddr.Port)
 	}
 	if raddr, ok = conn.RemoteAddr().(*net.TCPAddr); ok {
-		opt[define.ClientIP]   = raddr.IP.String()
+		opt[define.ClientIP] = raddr.IP.String()
 		opt[define.ClientPort] = strconv.Itoa(raddr.Port)
 	}
-	opt[define.IsAnonymousUser]    = strconv.FormatBool(anony)
-	opt[define.UID]                = strconv.FormatInt(uid, 10)
-	opt[define.AppID]              = strconv.FormatInt(appid, 10)
-	opt[define.ConnID]             = strconv.FormatInt(connid, 10)
-	opt[define.SubscribeRoom]      = strconv.FormatInt(int64(int32(rid & 0xFFFFFFFFFFFF)), 10)
+	opt[define.IsAnonymousUser] = strconv.FormatBool(anony)
+	opt[define.UID] = strconv.FormatInt(uid, 10)
+	opt[define.AppID] = strconv.FormatInt(appid, 10)
+	opt[define.ConnID] = strconv.FormatInt(connid, 10)
+	opt[define.SubscribeRoom] = strconv.FormatInt(int64(int32(rid&0xFFFFFFFFFFFF)), 10)
 	opt[define.HeartbeatThreshold] = heartbeat.String()
 	p.Operation = define.OP_AUTH_REPLY
 	if err != nil {
