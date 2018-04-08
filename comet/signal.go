@@ -33,6 +33,11 @@ func reload() {
 		return
 	}
 	Conf = newConf
+	updateServerID()
+	updateWhitelist()
+}
+
+func updateWhitelist() {
 	wl, err := NewWhitelist(Conf.WhiteLog, Conf.Whitelist)
 	if err != nil {
 		log.Error("NewWhitelist() error(%v)", err)

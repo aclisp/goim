@@ -160,17 +160,7 @@ func InitConfig() (err error) {
 		}
 		Conf.LogicAddrs[addr] = struct{}{}
 	}
-	if Conf.ServerId == 0 {
-		hostInfo, err := readHostInfo(YYMSHostInfo)
-		if err != nil {
-			log.Warn("Can not read the host info: %v", err)
-			return nil
-		}
-		Conf.ServerId = hostInfo.ServerID
-		if Conf.AdvertisedAddrs == nil {
-			Conf.AdvertisedAddrs = buildAdvertisedAddrs(hostInfo)
-		}
-	}
+	updateServerID()
 	return nil
 }
 
@@ -213,4 +203,18 @@ func buildAdvertisedAddrs(hostInfo *HostInfo) (addrs []string) {
 		addrs = append(addrs, a)
 	}
 	return
+}
+
+func updateServerID() {
+	if Conf.ServerId == 0 {
+		hostInfo, err := readHostInfo(YYMSHostInfo)
+		if err != nil {
+			log.Warn("Can not read the host info: %v", err)
+			return
+		}
+		Conf.ServerId = hostInfo.ServerID
+		if Conf.AdvertisedAddrs == nil {
+			Conf.AdvertisedAddrs = buildAdvertisedAddrs(hostInfo)
+		}
+	}
 }
