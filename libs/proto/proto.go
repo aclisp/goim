@@ -75,7 +75,16 @@ func (p *Proto) Reset() {
 }
 
 func (p *Proto) String() string {
-	return fmt.Sprintf("\n-------- proto --------\nver: %d\nop: %d\nseq: %d\nbody: \n%s-----------------------", p.Ver, p.Operation, p.SeqId, hex.Dump(p.Body))
+	return fmt.Sprintf(`{ver:%d op:%d seq:%d body_len:%d}
+-------- proto --------
+ver: %d
+op: %d
+seq: %d
+body:
+%s-----------------------`,
+		p.Ver, p.Operation, p.SeqId, len(p.Body),
+		p.Ver, p.Operation, p.SeqId, hex.Dump(p.Body),
+	)
 }
 
 func (p *Proto) WriteTo(b *bytes.Writer) {

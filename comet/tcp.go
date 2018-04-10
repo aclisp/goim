@@ -259,7 +259,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 			DefaultWhitelist.Log.Info("key: %s proto ready", key)
 		}
 		if Debug {
-			log.Debug("%p key: %s dispatch msg: {Ver:%d Op:%d Seq:%d Body:%d}", conn, key, p.Ver, p.Operation, p.SeqId, len(p.Body))
+			log.Debug("%p key: %s dispatch msg: {ver:%d op:%d seq:%d body_len:%d}", conn, key, p.Ver, p.Operation, p.SeqId, len(p.Body))
 		}
 		switch p {
 		case proto.ProtoFinish:
