@@ -54,10 +54,10 @@ func handleError() {
 	}
 }
 
-func mpushKafka(serverId int32, keys []string, msg []byte) (err error) {
+func mpushKafka(serverId int32, keys []string, msg []byte, kick bool) (err error) {
 	var (
 		vBytes []byte
-		v      = &proto.KafkaMsg{OP: define.KAFKA_MESSAGE_MULTI, ServerId: serverId, SubKeys: keys, Msg: msg}
+		v      = &proto.KafkaMsg{OP: define.KAFKA_MESSAGE_MULTI, ServerId: serverId, SubKeys: keys, Msg: msg, Kick: kick}
 	)
 	if !Conf.KafkaOpen {
 		err = push(v)

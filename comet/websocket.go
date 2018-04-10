@@ -234,6 +234,10 @@ func (server *Server) dispatchWebsocket(key string, conn *websocket.Conn, ch *Ch
 				goto failed
 			}
 		}
+		if p.Operation == define.OP_DISCONNECT_REPLY {
+			log.Warn("key: %s kicked", key)
+			break
+		}
 	}
 failed:
 	if err != nil {

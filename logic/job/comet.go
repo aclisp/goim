@@ -148,9 +148,13 @@ func InitComet(addrs map[int32]string, options CometOptions) (err error) {
 }
 
 // mPushComet push a message to a batch of subkeys
-func mPushComet(serverId int32, subKeys []string, body json.RawMessage) {
+func mPushComet(serverId int32, subKeys []string, body json.RawMessage, kick bool) {
+	var op = define.OP_SEND_SMS_REPLY
+	if kick {
+		op = define.OP_DISCONNECT_REPLY
+	}
 	var args = proto.MPushMsgArg{
-		Keys: subKeys, P: proto.Proto{Ver: 0, Operation: define.OP_SEND_SMS_REPLY, Body: body},
+		Keys: subKeys, P: proto.Proto{Ver: 0, Operation: op, Body: body},
 	}
 	if c, ok := cometServiceMap[serverId]; ok {
 		if err := c.Push(&args); err != nil {

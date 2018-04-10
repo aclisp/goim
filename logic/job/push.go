@@ -14,6 +14,7 @@ type pushArg struct {
 	SubKeys  []string
 	Msg      []byte
 	RoomId   int64
+	Kick     bool
 }
 
 var (
@@ -36,7 +37,7 @@ func processPush(ch chan *pushArg) {
 	var arg *pushArg
 	for {
 		arg = <-ch
-		mPushComet(arg.ServerId, arg.SubKeys, arg.Msg)
+		mPushComet(arg.ServerId, arg.SubKeys, arg.Msg, arg.Kick)
 	}
 }
 
@@ -54,7 +55,13 @@ func push(msg []byte) (err error) {
 func pushKafkaMsg(m *proto.KafkaMsg) (err error) {
 	switch m.OP {
 	case define.KAFKA_MESSAGE_MULTI:
-		pushChs[rand.Int()%Conf.PushChan] <- &pushArg{ServerId: m.ServerId, SubKeys: m.SubKeys, Msg: m.Msg, RoomId: define.NoRoom}
+		pushChs[rand.Int()%Conf.PushChan] <- &pushArg{
+			ServerId: m.ServerId,
+			SubKeys:  m.SubKeys,
+			Msg:      m.Msg,
+			RoomId:   define.NoRoom,
+			Kick:     m.Kick,
+		}
 	case define.KAFKA_MESSAGE_BROADCAST:
 		broadcast(m.Msg)
 	case define.KAFKA_MESSAGE_BROADCAST_ROOM:

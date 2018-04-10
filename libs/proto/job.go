@@ -8,4 +8,5 @@ type KafkaMsg struct {
 	SubKeys  []string `json:"subkeys,omitempty"`
 	Msg      []byte   `json:"msg"`
 	Ensure   bool     `json:"ensure,omitempty"`
+	Kick     bool     `json:"kick,omitempty"`
 }

@@ -93,10 +93,12 @@ func Push(w http.ResponseWriter, r *http.Request) {
 		userId    int64
 		appId     int64
 		err       error
-		uidStr    = r.URL.Query().Get("uid")
-		appidStr  = r.URL.Query().Get("appid")
+		param     = r.URL.Query()
+		uidStr    = param.Get("uid")
+		appidStr  = param.Get("appid")
 		res       = map[string]interface{}{"ret": OK}
 	)
+	_, kick := param["kick"]
 	defer retPWrite(w, r, res, &body, time.Now())
 	if bodyBytes, err = ioutil.ReadAll(r.Body); err != nil {
 		log.Error("ioutil.ReadAll() failed (%s)", err)
@@ -120,7 +122,7 @@ func Push(w http.ResponseWriter, r *http.Request) {
 	userId = (appId << 48) | userId
 	subKeys = genSubKey(userId)
 	for serverId, keys = range subKeys {
-		if err = mpushKafka(serverId, keys, bodyBytes); err != nil {
+		if err = mpushKafka(serverId, keys, bodyBytes, kick); err != nil {
 			res["ret"] = InternalErr
 			return
 		}
@@ -203,7 +205,7 @@ func Pushs(w http.ResponseWriter, r *http.Request) {
 	}
 	subKeys = genSubKeys(userIds)
 	for serverId, keys = range subKeys {
-		if err = mpushKafka(serverId, keys, bodyBytes); err != nil {
+		if err = mpushKafka(serverId, keys, bodyBytes, false); err != nil {
 			res["ret"] = InternalErr
 			return
 		}
