@@ -314,7 +314,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 		if white {
 			DefaultWhitelist.Log.Info("key: %s flush", key)
 		}
-		if p.Operation == define.OP_DISCONNECT_REPLY {
+		if p != nil && p.Operation == define.OP_DISCONNECT_REPLY {
 			log.Warn("%p key: %s kicked", conn, key)
 			break
 		}
