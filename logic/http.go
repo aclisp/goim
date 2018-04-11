@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	inet "goim/libs/net"
 	"goim/libs/proto"
 	"io/ioutil"
@@ -90,6 +91,7 @@ func Push(w http.ResponseWriter, r *http.Request) {
 		keys      []string
 		subKeys   map[int32][]string
 		bodyBytes []byte
+		bodyTyped ServerPush
 		userId    int64
 		appId     int64
 		err       error
@@ -105,7 +107,11 @@ func Push(w http.ResponseWriter, r *http.Request) {
 		res["ret"] = InternalErr
 		return
 	}
-	body = "<protobuf bytes>"
+	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
+		body = string(bodyBytes)
+	} else {
+		body = fmt.Sprintf("<protobuf bytes: type=%d>", bodyTyped.MessageType)
+	}
 	if userId, err = strconv.ParseInt(uidStr, 10, 48); err != nil {
 		log.Error("strconv.Atoi(\"%s\") error(%v)", uidStr, err)
 		res["ret"] = InternalErr
@@ -184,6 +190,7 @@ func Pushs(w http.ResponseWriter, r *http.Request) {
 	var (
 		body      string
 		bodyBytes []byte
+		bodyTyped ServerPush
 		serverId  int32
 		userIds   []int64
 		err       error
@@ -197,11 +204,15 @@ func Pushs(w http.ResponseWriter, r *http.Request) {
 		res["ret"] = InternalErr
 		return
 	}
-	body = "<protobuf bytes>"
 	if bodyBytes, userIds, err = parsePushsBody(bodyBytes); err != nil {
 		log.Error("parsePushsBody(\"%s\") error(%s)", body, err)
 		res["ret"] = InternalErr
 		return
+	}
+	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
+		body = string(bodyBytes)
+	} else {
+		body = fmt.Sprintf("<protobuf bytes: type=%d, uids=%v>", bodyTyped.MessageType, userIds)
 	}
 	subKeys = genSubKeys(userIds)
 	for serverId, keys = range subKeys {
@@ -221,6 +232,7 @@ func PushRoom(w http.ResponseWriter, r *http.Request) {
 	}
 	var (
 		bodyBytes []byte
+		bodyTyped ServerPush
 		body      string
 		rid       int64
 		appid     int64
@@ -234,7 +246,11 @@ func PushRoom(w http.ResponseWriter, r *http.Request) {
 		res["ret"] = InternalErr
 		return
 	}
-	body = "<protobuf bytes>"
+	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
+		body = string(bodyBytes)
+	} else {
+		body = fmt.Sprintf("<protobuf bytes: type=%d>", bodyTyped.MessageType)
+	}
 	ridStr := param.Get("rid")
 	enable, _ := strconv.ParseBool(param.Get("ensure"))
 	appidStr := param.Get("appid")
@@ -269,6 +285,7 @@ func PushAll(w http.ResponseWriter, r *http.Request) {
 	}
 	var (
 		bodyBytes []byte
+		bodyTyped ServerPush
 		body      string
 		err       error
 		res       = map[string]interface{}{"ret": OK}
@@ -279,7 +296,11 @@ func PushAll(w http.ResponseWriter, r *http.Request) {
 		res["ret"] = InternalErr
 		return
 	}
-	body = "<protobuf bytes>"
+	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
+		body = string(bodyBytes)
+	} else {
+		body = fmt.Sprintf("<protobuf bytes: type=%d>", bodyTyped.MessageType)
+	}
 	// push all
 	if err := broadcastKafka(bodyBytes); err != nil {
 		log.Error("broadcastKafka(\"%s\") error(%s)", body, err)
