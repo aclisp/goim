@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	inet "goim/libs/net"
@@ -110,7 +111,14 @@ func Push(w http.ResponseWriter, r *http.Request) {
 	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
 		body = string(bodyBytes)
 	} else {
-		body = fmt.Sprintf("<protobuf bytes: type=%d>", bodyTyped.MessageType)
+		body = fmt.Sprintf("<protobuf bytes: type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+			bodyTyped.MessageType,
+			bodyTyped.Headers,
+			bodyTyped.MessageDesc,
+			bodyTyped.ServiceName,
+			bodyTyped.MethodName,
+			hex.Dump(bodyTyped.PushBuffer),
+		)
 	}
 	if userId, err = strconv.ParseInt(uidStr, 10, 48); err != nil {
 		log.Error("strconv.Atoi(\"%s\") error(%v)", uidStr, err)
@@ -212,7 +220,15 @@ func Pushs(w http.ResponseWriter, r *http.Request) {
 	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
 		body = string(bodyBytes)
 	} else {
-		body = fmt.Sprintf("<protobuf bytes: type=%d, uids=%v>", bodyTyped.MessageType, userIds)
+		body = fmt.Sprintf("<protobuf bytes: uids=%v type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+			userIds,
+			bodyTyped.MessageType,
+			bodyTyped.Headers,
+			bodyTyped.MessageDesc,
+			bodyTyped.ServiceName,
+			bodyTyped.MethodName,
+			hex.Dump(bodyTyped.PushBuffer),
+		)
 	}
 	subKeys = genSubKeys(userIds)
 	for serverId, keys = range subKeys {
@@ -249,7 +265,14 @@ func PushRoom(w http.ResponseWriter, r *http.Request) {
 	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
 		body = string(bodyBytes)
 	} else {
-		body = fmt.Sprintf("<protobuf bytes: type=%d>", bodyTyped.MessageType)
+		body = fmt.Sprintf("<protobuf bytes: type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+			bodyTyped.MessageType,
+			bodyTyped.Headers,
+			bodyTyped.MessageDesc,
+			bodyTyped.ServiceName,
+			bodyTyped.MethodName,
+			hex.Dump(bodyTyped.PushBuffer),
+		)
 	}
 	ridStr := param.Get("rid")
 	enable, _ := strconv.ParseBool(param.Get("ensure"))
@@ -299,7 +322,14 @@ func PushAll(w http.ResponseWriter, r *http.Request) {
 	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
 		body = string(bodyBytes)
 	} else {
-		body = fmt.Sprintf("<protobuf bytes: type=%d>", bodyTyped.MessageType)
+		body = fmt.Sprintf("<protobuf bytes: type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+			bodyTyped.MessageType,
+			bodyTyped.Headers,
+			bodyTyped.MessageDesc,
+			bodyTyped.ServiceName,
+			bodyTyped.MethodName,
+			hex.Dump(bodyTyped.PushBuffer),
+		)
 	}
 	// push all
 	if err := broadcastKafka(bodyBytes); err != nil {

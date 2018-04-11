@@ -42,12 +42,12 @@ func NewDefaultAuther() *DefaultAuther {
 }
 
 func (a *DefaultAuther) Auth(body []byte) (userId int64, roomId int64, err error) {
-	log.Info("Auth enter. body is \n%s", hex.Dump(body))
+	log.Debug("auth enter. body is \n%s", hex.Dump(body))
 	var appId int64 = 0
 	userId = 0
 	roomId = define.NoRoom
 	defer func() {
-		log.Info("Auth return. appId is %v, userId is %v, roomId is %v", appId, userId, roomId)
+		log.Debug("auth return. appid=%v, uid=%v, room=%v", appId, userId, roomId)
 	}()
 	input := proto.RPCInput{}
 	if err =  pb.Unmarshal(body, &input); err != nil {
