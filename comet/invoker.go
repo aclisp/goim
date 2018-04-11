@@ -7,11 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"goim/libs/proto"
-	"code.yy.com/yytars/goframework/tars/servant"
 	"code.yy.com/yytars/goframework/jce/taf"
-	pb "github.com/golang/protobuf/proto"
+	"code.yy.com/yytars/goframework/tars/servant"
 	log "github.com/aclisp/log4go"
+	pb "github.com/golang/protobuf/proto"
+	"goim/libs/proto"
 )
 
 // setup yytars communicator
@@ -42,16 +42,18 @@ func initConfig() {
 	if len(configFile) == 0 {
 			appzaplog.SetLogLevel("info")
 			return
- */
+*/
 var comm = servant.NewPbCommunicator()
 
 func invoke(comm *servant.Communicator, input proto.RPCInput) (output proto.RPCOutput, err error) {
 	var (
 		rpcStub *servant.ServantProxy
 		rpcResp *taf.ResponsePacket
+		ctx     context.Context
 	)
+	ctx = servant.NewOutgoingContext(context.TODO(), input.Opt)
 	rpcStub = comm.GetServantProxy(input.Obj)
-	rpcResp, err = rpcStub.Taf_invoke(context.TODO(), 0, input.Func, input.Req, nil, input.Opt)
+	rpcResp, err = rpcStub.Taf_invoke(ctx, 0, input.Func, input.Req)
 	if err != nil {
 		err = fmt.Errorf("rpc.invoke error: %v", err)
 		log.Error("%v", err)
@@ -99,7 +101,7 @@ func (ws WebsocketToRPC) Decode(body json.RawMessage) (input proto.RPCInput, err
 		log.Error("%v", err)
 		return
 	}
-	input.Req = input.Req[1:len(input.Req)-1]
+	input.Req = input.Req[1 : len(input.Req)-1]
 	if input.Req, err = base64.StdEncoding.DecodeString(string(input.Req)); err != nil {
 		err = fmt.Errorf("decode rpc.req can not be decode to hex: %s", input.Req)
 		log.Error("%v", err)
