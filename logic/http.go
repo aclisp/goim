@@ -109,9 +109,13 @@ func Push(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
-		body = string(bodyBytes)
+		body = fmt.Sprintf("<bytes: len=%d> \n%s",
+			len(bodyBytes),
+			hex.Dump(bodyBytes),
+		)
 	} else {
-		body = fmt.Sprintf("<protobuf bytes: type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+		body = fmt.Sprintf("<protobuf bytes: len=%d type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+			len(bodyBytes),
 			bodyTyped.MessageType,
 			bodyTyped.Headers,
 			bodyTyped.MessageDesc,
@@ -218,10 +222,15 @@ func Pushs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
-		body = string(bodyBytes)
-	} else {
-		body = fmt.Sprintf("<protobuf bytes: uids=%v type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+		body = fmt.Sprintf("<bytes: uids=%v len=%d> \n%s",
 			userIds,
+			len(bodyBytes),
+			hex.Dump(bodyBytes),
+		)
+	} else {
+		body = fmt.Sprintf("<protobuf bytes: uids=%v len=%d type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+			userIds,
+			len(bodyBytes),
 			bodyTyped.MessageType,
 			bodyTyped.Headers,
 			bodyTyped.MessageDesc,
@@ -263,9 +272,13 @@ func PushRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
-		body = string(bodyBytes)
+		body = fmt.Sprintf("<bytes: len=%d> \n%s",
+			len(bodyBytes),
+			hex.Dump(bodyBytes),
+		)
 	} else {
-		body = fmt.Sprintf("<protobuf bytes: type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+		body = fmt.Sprintf("<protobuf bytes: len=%d type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+			len(bodyBytes),
 			bodyTyped.MessageType,
 			bodyTyped.Headers,
 			bodyTyped.MessageDesc,
@@ -320,9 +333,13 @@ func PushAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
-		body = string(bodyBytes)
+		body = fmt.Sprintf("<bytes: len=%d> \n%s",
+			len(bodyBytes),
+			hex.Dump(bodyBytes),
+		)
 	} else {
-		body = fmt.Sprintf("<protobuf bytes: type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+		body = fmt.Sprintf("<protobuf bytes: len=%d type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+			len(bodyBytes),
 			bodyTyped.MessageType,
 			bodyTyped.Headers,
 			bodyTyped.MessageDesc,

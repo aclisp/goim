@@ -4,6 +4,7 @@ package define
 const (
 	// 长连接鉴权时使用
 	UID    = "uid"
+	Token  = "token"
 	AppID  = "appid"
 	ConnID = "connid" // 同一uid下connid唯一
 	// 长连接鉴权时使用，切换房间时使用

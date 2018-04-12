@@ -55,6 +55,8 @@ type Config struct {
 	// monitor
 	MonitorOpen  bool     `goconf:"monitor:open"`
 	MonitorAddrs []string `goconf:"monitor:addrs:,"`
+	// auth
+	AuthMode string `goconf:"auth:mode"`
 }
 
 func NewConfig() *Config {
@@ -67,6 +69,7 @@ func NewConfig() *Config {
 		PprofAddrs:     []string{"localhost:6971"},
 		HTTPAddrs:      []string{"7172"},
 		RouterRPCAddrs: make(map[string]string),
+		AuthMode:       "bypass",
 	}
 }
 

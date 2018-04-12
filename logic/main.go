@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"goim/libs/perf"
 	"runtime"
 
@@ -29,7 +30,13 @@ func main() {
 	MergeCount()
 	go SyncCount()
 	// logic rpc
-	if err := InitRPC(NewDefaultAuther()); err != nil {
+	autherBuilder, ok := AutherRegistry[Conf.AuthMode]
+	if !ok {
+		panic(fmt.Errorf("unknown auth mode: %s", Conf.AuthMode))
+	} else {
+		log.Info("auth mode: %s", Conf.AuthMode)
+	}
+	if err := InitRPC(autherBuilder()); err != nil {
 		panic(err)
 	}
 	// to job
