@@ -51,7 +51,7 @@ func (server *Server) Bucket(subKey string) *Bucket {
 }
 
 func (server *Server) Register() {
-	for {
+	for !Conf.Drain {
 		server.operator.Register()
 		time.Sleep(1 * time.Second)
 	}

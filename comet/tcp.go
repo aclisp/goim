@@ -57,6 +57,12 @@ func acceptTCP(server *Server, lis *net.TCPListener) {
 			log.Error("listener.Accept(\"%s\") error(%v)", lis.Addr().String(), err)
 			return
 		}
+		if Conf.Drain {
+			conn.Close()
+			log.Warn("server is draining, close listener")
+			lis.Close()
+			return
+		}
 		if err = conn.SetKeepAlive(server.Options.TCPKeepalive); err != nil {
 			log.Error("conn.SetKeepAlive() error(%v)", err)
 			return

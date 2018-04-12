@@ -49,6 +49,7 @@ type Config struct {
 	StatBind  []string `goconf:"base:stat.bind:,"`
 	ServerId  int32    `goconf:"base:server.id"`
 	Debug     bool     `goconf:"base:debug"`
+	Drain     bool     `goconf:"base:drain"`
 	Whitelist []string `goconf:"base:white.list:,"`
 	WhiteLog  string   `goconf:"base:white.log"`
 	// for IaaS
@@ -106,6 +107,7 @@ func NewConfig() *Config {
 		PprofBind: []string{"localhost:6971"},
 		StatBind:  []string{"localhost:6972"},
 		Debug:     true,
+		Drain:     false,
 		// tcp
 		TCPBind:      []string{"0.0.0.0:8080"},
 		TCPSndbuf:    1024,

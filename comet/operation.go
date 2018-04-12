@@ -2,6 +2,7 @@ package main
 
 import (
 	"goim/libs/define"
+	"goim/libs/encoding/binary"
 	"goim/libs/proto"
 	"time"
 
@@ -14,6 +15,8 @@ const (
 	WebsocketConn ConnType = iota
 	TCPConn
 )
+
+var currentTimeMillisBytes [8]byte
 
 type Operator interface {
 	// Operate process the common operation such as send message etc.
@@ -46,7 +49,6 @@ func NewOperator() Operator {
 
 func (operator *DefaultOperator) Operate(p *proto.Proto, connType ConnType, optMerge map[string]string) error {
 	var (
-		body []byte
 		invoker RPCInvoker
 	)
 	if connType == TCPConn {
@@ -75,9 +77,9 @@ func (operator *DefaultOperator) Operate(p *proto.Proto, connType ConnType, optM
 		}
 		p.Operation = define.OP_SEND_SMS_REPLY
 	} else if p.Operation == define.OP_TEST {
-		log.Debug("test operation: %s", body)
+		binary.BigEndian.PutInt64(currentTimeMillisBytes[:], time.Now().UnixNano()/1000000)
+		p.Body = currentTimeMillisBytes[:]
 		p.Operation = define.OP_TEST_REPLY
-		p.Body = []byte("{\"test\":\"come on\"}")
 	} else {
 		return ErrOperation
 	}

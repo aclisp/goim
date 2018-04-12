@@ -23,6 +23,10 @@ func main() {
 	runtime.GOMAXPROCS(Conf.MaxProc)
 	log.LoadConfiguration(Conf.Log)
 	defer log.Close()
+	if Conf.Drain {
+		log.Warn("comet is in drain mode, quit")
+		return
+	}
 	log.Info("comet[%s] start", Ver)
 	// white list log
 	if wl, err := NewWhitelist(Conf.WhiteLog, Conf.Whitelist); err != nil {

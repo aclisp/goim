@@ -68,7 +68,7 @@ message ServerPush {
 | 参数名     | 必选  | 类型 | 说明       |
 | :-----     | :---  | :--- | :---       |
 | head_length   | true  | int32 | 总是20 |
-| client_version| true  | int32 | 协议版本号（目前为1) |
+| client_version| true  | int32 | 协议版本号(目前为0) |
 | cmdid         | true  | int32 | 指令编号 |
 | seq           | true  | int32 | 序列号（服务端返回和客户端发送一一对应，广播总是0） |
 | body_length   | true  | int32 | body长度 |
@@ -82,10 +82,13 @@ message ServerPush {
 | 3 | 心跳响应 |
 | 4 | 业务上行消息 |
 | 5 | 业务下行消息 |
+| 6 | 业务下行消息(同时服务器主动断线) |
 | 7 | 认证    |
 | 8 | 认证返回 |
 |15 | 切换房间 |
 |16 | 切换房间响应 |
+|254| 获取服务器时间 |
+|255| 服务器时间响应 |
 
 ### 流程
 
@@ -187,6 +190,12 @@ curl -d "<protobuf bytes>" 'http://test-goim.yy.com:7172/1/push/all'
 
 ```
 curl -d "<protobuf bytes>" 'http://test-goim.yy.com:7172/1/push?uid=88889999'
+```
+
+推送之后，服务器主动掐断这个用户的所有TCP连接
+
+```
+curl -d "<protobuf bytes>" 'http://test-goim.yy.com:7172/1/push?uid=88889999&kick'
 ```
 
 ### 单消息多人推送
