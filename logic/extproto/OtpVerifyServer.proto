@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package UdbApp.OtpVerifyServer;
+
+enum Errcode
+{
+SUCCESS = 0;				//
+OTP_FORMAT = 51;			//
+DB_ERR = 96;
+Freq_Limit = 97;
+AUTH_ERR = 98;
+SYS_ERR = 99;
+}
+
+message Request {
+    string name = 1;
+}
+
+message Response {
+    string greet = 1;
+}
+
+message AuthorizeMsg{
+	string user = 1;
+	string password = 2;
+	string clientip = 3;
+}
+
+message OtpVerifyReq {
+    string context = 1;
+    string otp = 2;
+    AuthorizeMsg authorizes = 3 ;
+}
+
+message OtpVerifyRsp {
+    string context = 1;
+    int32 rescode = 2;    // 结果标识码,类型为ResCode
+    string errmsg = 3;   // 错误类型
+    uint64 uid = 4;      // yyuid
+}
+
+service OtpVerify {
+    rpc SayGreeting (Request) returns (Response);
+    rpc OtpVerify (OtpVerifyReq) returns (OtpVerifyRsp);
+}
