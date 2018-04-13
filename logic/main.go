@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"goim/libs/io/ioutil"
 	"goim/libs/perf"
 	"runtime"
 
@@ -50,6 +51,9 @@ func main() {
 		if err := InitKafka(Conf.KafkaAddrs); err != nil {
 			panic(err)
 		}
+	}
+	if err := ioutil.WritePidFile(Conf.PidFile); err != nil {
+		panic(err)
 	}
 	// block until a signal is received.
 	InitSignal()

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"goim/libs/io/ioutil"
 	"goim/libs/perf"
 	"runtime"
 
@@ -94,6 +95,9 @@ func main() {
 	}
 	// start rpc
 	if err := InitRPCPush(Conf.RPCPushAddrs); err != nil {
+		panic(err)
+	}
+	if err := ioutil.WritePidFile(Conf.PidFile); err != nil {
 		panic(err)
 	}
 	// block until a signal is received.

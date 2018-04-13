@@ -20,6 +20,8 @@ func init() {
 }
 
 type Config struct {
+	// base
+	PidFile    string   `goconf:"base:pidfile"`
 	Log        string   `goconf:"base:log"`
 	KafkaOpen  bool     `goconf:"kafka:open"`
 	ZKAddrs    []string `goconf:"kafka:zookeeper.list:,"`
@@ -48,6 +50,8 @@ type Config struct {
 
 func NewConfig() *Config {
 	return &Config{
+		PidFile:      "/tmp/goim-job.pid",
+		Log:          "./job-log.xml",
 		Comets:       make(map[int32]string),
 		ZKRoot:       "",
 		KafkaTopic:   "kafka_topic_push",

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"goim/libs/io/ioutil"
 	"runtime"
 
 	log "github.com/aclisp/log4go"
@@ -48,6 +49,9 @@ func main() {
 		}
 	}
 	if err := InitRPC(); err != nil {
+		panic(err)
+	}
+	if err := ioutil.WritePidFile(Conf.PidFile); err != nil {
 		panic(err)
 	}
 	// block until a signal is received.
