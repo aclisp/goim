@@ -15,6 +15,8 @@ import (
 	log "github.com/aclisp/log4go"
 )
 
+var tcpListener net.Listener
+
 // InitTCP listen all tcp.bind and start accept connections.
 func InitTCP(addrs []string, accept int) (err error) {
 	var (
@@ -39,7 +41,14 @@ func InitTCP(addrs []string, accept int) (err error) {
 			go acceptTCP(DefaultServer, listener)
 		}
 	}
+	tcpListener = listener
 	return
+}
+
+func ShutdownTCP() {
+	if tcpListener != nil {
+		tcpListener.Close()
+	}
 }
 
 // Accept accepts connections on the listener and serves requests
@@ -55,12 +64,6 @@ func acceptTCP(server *Server, lis *net.TCPListener) {
 		if conn, err = lis.AcceptTCP(); err != nil {
 			// if listener close then return
 			log.Error("listener.Accept(\"%s\") error(%v)", lis.Addr().String(), err)
-			return
-		}
-		if Conf.Drain {
-			conn.Close()
-			log.Warn("server is draining, close listener")
-			lis.Close()
 			return
 		}
 		if err = conn.SetKeepAlive(server.Options.TCPKeepalive); err != nil {

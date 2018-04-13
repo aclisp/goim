@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"goim/libs/define"
 	"goim/libs/proto"
@@ -25,6 +26,8 @@ var upgrader = websocket.Upgrader{
 		return true
 	},
 }
+
+var httpServers []*http.Server
 
 func InitWebsocket(addrs []string) (err error) {
 	var (
@@ -52,9 +55,12 @@ func InitWebsocket(addrs []string) (err error) {
 		go func(host string) {
 			if err = server.Serve(listener); err != nil {
 				log.Error("server.Serve(\"%s\") error(%v)", host, err)
-				panic(err)
+				if err != http.ErrServerClosed {
+					panic(err)
+				}
 			}
 		}(bind)
+		httpServers = append(httpServers, server)
 	}
 	return
 }
@@ -78,17 +84,26 @@ func InitWebsocketWithTLS(addrs []string, cert, priv string) (err error) {
 		go func(host string) {
 			ln, err := net.Listen("tcp", host)
 			if err != nil {
-				return
+				panic(err)
 			}
 
 			tlsListener := tls.NewListener(ln, config)
 			if err = server.Serve(tlsListener); err != nil {
 				log.Error("server.Serve(\"%s\") error(%v)", host, err)
-				return
+				if err != http.ErrServerClosed {
+					panic(err)
+				}
 			}
 		}(bind)
+		httpServers = append(httpServers, server)
 	}
 	return
+}
+
+func ShutdownWebsocket() {
+	for _, s := range httpServers {
+		s.Shutdown(context.TODO())
+	}
 }
 
 func ServeWebSocket(w http.ResponseWriter, req *http.Request) {

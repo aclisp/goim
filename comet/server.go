@@ -28,6 +28,7 @@ type Server struct {
 	round     *Round // accept round store
 	operator  Operator
 	Options   ServerOptions
+	InShutdown bool
 }
 
 // NewServer returns a new Server.
@@ -51,7 +52,7 @@ func (server *Server) Bucket(subKey string) *Bucket {
 }
 
 func (server *Server) Register() {
-	for !Conf.Drain {
+	for !server.InShutdown {
 		server.operator.Register()
 		time.Sleep(1 * time.Second)
 	}

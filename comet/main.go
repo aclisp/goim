@@ -20,9 +20,6 @@ func main() {
 	if err := InitConfig(); err != nil {
 		panic(err)
 	}
-	if Conf.Drain {
-		panic("comet is in drain mode, quit")
-	}
 	Debug = Conf.Debug
 	runtime.GOMAXPROCS(Conf.MaxProc)
 	log.LoadConfiguration(Conf.Log)

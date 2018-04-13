@@ -16,10 +16,12 @@ func InitSignal() {
 		s := <-c
 		log.Info("comet[%s] get a signal %s", Ver, s.String())
 		switch s {
-		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGSTOP, syscall.SIGINT:
+		case syscall.SIGQUIT, syscall.SIGSTOP, syscall.SIGINT:
 			return
 		case syscall.SIGHUP:
 			reload()
+		case syscall.SIGTERM:
+			shutdown()
 		default:
 			return
 		}
@@ -44,4 +46,11 @@ func updateWhitelist() {
 		return
 	}
 	DefaultWhitelist = wl
+}
+
+func shutdown() {
+	DefaultServer.InShutdown = true
+	ShutdownTCP()
+	ShutdownWebsocket()
+	log.Warn("Server is shutting down... no new connections will be accepted")
 }
