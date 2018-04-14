@@ -49,9 +49,7 @@ func InitWebsocket(addrs []string) (err error) {
 			return
 		}
 		server = &http.Server{Handler: httpServeMux}
-		if Debug {
-			log.Debug("start websocket listen: \"%s\"", bind)
-		}
+		log.Info("start websocket listen: \"%s\"", bind)
 		go func(host string) {
 			if err = server.Serve(listener); err != nil {
 				log.Error("server.Serve(\"%s\") error(%v)", host, err)
@@ -78,9 +76,7 @@ func InitWebsocketWithTLS(addrs []string, cert, priv string) (err error) {
 	for _, bind := range addrs {
 		server := &http.Server{Addr: bind, Handler: httpServeMux}
 		server.SetKeepAlivesEnabled(true)
-		if Debug {
-			log.Debug("start websocket wss listen: \"%s\"", bind)
-		}
+		log.Info("start websocket wss listen: \"%s\"", bind)
 		go func(host string) {
 			ln, err := net.Listen("tcp", host)
 			if err != nil {
@@ -197,7 +193,13 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 		ch.CliProto.SetAdv()
 		ch.Signal()
 	}
-	log.Error("key: %s server websocket failed error(%v)", key, err)
+	if err != nil {
+		if websocket.IsCloseError(err, websocket.CloseGoingAway) {
+			log.Debug("key: %s server websocket failed error(%v)", key, err)
+		} else {
+			log.Error("key: %s server websocket failed error(%v)", key, err)
+		}
+	}
 	tr.Del(trd)
 	conn.Close()
 	ch.Close()

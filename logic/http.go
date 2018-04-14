@@ -64,7 +64,7 @@ func retWrite(w http.ResponseWriter, r *http.Request, res map[string]interface{}
 	if _, err := w.Write([]byte(dataStr)); err != nil {
 		log.Error("w.Write(\"%s\") error(%v)", dataStr, err)
 	}
-	log.Debug("req: \"%s\", ip:\"%s\", time:\"%fs\"", r.URL.String(), r.RemoteAddr, time.Now().Sub(start).Seconds())
+	log.Fine("req: \"%s\", ip:\"%s\", time:\"%fs\"", r.URL.String(), r.RemoteAddr, time.Now().Sub(start).Seconds())
 }
 
 // retPWrite marshal the result and write to client(post).

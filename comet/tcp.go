@@ -7,6 +7,7 @@ import (
 	"goim/libs/define"
 	"goim/libs/proto"
 	itime "goim/libs/time"
+	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -33,9 +34,7 @@ func InitTCP(addrs []string, accept int) (err error) {
 			log.Error("net.ListenTCP(\"tcp4\", \"%s\") error(%v)", bind, err)
 			return
 		}
-		if Debug {
-			log.Debug("start tcp listen: \"%s\"", bind)
-		}
+		log.Info("start tcp listen: \"%s\"", bind)
 		// split N core accept
 		for i := 0; i < accept; i++ {
 			go acceptTCP(DefaultServer, listener)
@@ -228,7 +227,11 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 		DefaultWhitelist.Log.Info("key: %s server tcp error(%v)", key, err)
 	}
 	if err != nil {
-		log.Error("%p key: %s server tcp failed error(%v)", conn, key, err)
+		if err == io.EOF {
+			log.Debug("%p key: %s server tcp failed error(%v)", conn, key, err)
+		} else {
+			log.Error("%p key: %s server tcp failed error(%v)", conn, key, err)
+		}
 	}
 	b.Del(key)
 	tr.Del(trd)

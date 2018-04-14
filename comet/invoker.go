@@ -55,7 +55,7 @@ func invoke(comm *servant.Communicator, input proto.RPCInput) (output proto.RPCO
 	rpcStub = comm.GetServantProxy(input.Obj)
 	rpcResp, err = rpcStub.Taf_invoke(ctx, 0, input.Func, input.Req)
 	if err != nil {
-		err = fmt.Errorf("rpc.invoke error: %v", err)
+		err = fmt.Errorf("rpc.invoke error: %v (service=%s method=%s)", err, input.Obj, input.Func)
 		log.Error("%v", err)
 		output.Ret = 1
 		output.Desc = err.Error()
