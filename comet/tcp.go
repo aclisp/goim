@@ -201,7 +201,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 				output, err = server.operator.Direct(input, TCPConn, opt)
 				if err != nil {
 					ret = 3
-					msg = fmt.Sprintf("call downstream service %q.%q err: %v", input.Obj, input.Func, err)
+					msg = err.Error()
 				}
 			}
 			output.Ret = int32(ret)
