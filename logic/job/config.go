@@ -78,8 +78,8 @@ func InitConfig() (err error) {
 		return err
 	}
 	var serverIDi int64
-	for _, serverID := range gconf.Get("comets").Keys() {
-		addr, err := gconf.Get("comets").String(serverID)
+	for _, serverID := range gconf.Get("comet.addrs").Keys() {
+		addr, err := gconf.Get("comet.addrs").String(serverID)
 		if err != nil {
 			return err
 		}
