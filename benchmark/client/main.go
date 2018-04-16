@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"net"
 	pb "github.com/golang/protobuf/proto"
+	"bilin/protocol"
 )
 
 const (
@@ -131,6 +132,7 @@ func startWebsocketClient(key string) {
 		log.Error("net.Dial(\"%s\") error(%v)", os.Args[3], err)
 		return
 	}
+	defer conn.Close()
 	seqId := int32(1)
 	proto := new(Proto)
 	proto.Ver = 1
@@ -206,111 +208,125 @@ func startTcpClient(key string) {
 	quit := make(chan bool, 1)
 	defer close(quit)
 
+	// setup tcp conn
 	conn, err := net.Dial("tcp", os.Args[3])
 	if err != nil {
 		log.Error("net.Dial(\"%s\") error(%v)", os.Args[3], err)
 		return
 	}
+	defer conn.Close()
 	seqId := int32(1)
 	wr := bufio.NewWriter(conn)
 	rd := bufio.NewReader(conn)
-	proto := new(Proto)
-	proto.Ver = 1
-	// auth
-	// test handshake timeout
-	// time.Sleep(time.Second * 31)
-	proto.Operation = OP_AUTH
-	proto.SeqId = seqId
-	in := RPCInput{}
-	in.Headers = make(map[string]string)
-	in.Headers["uid"] = key
-	proto.Body, err = pb.Marshal(&in)
-	if err != nil {
-		log.Error("key:%s pb.Marshal(%v) error(%v)", key, in, err)
+
+	// auth user
+	authUser := func(uid string) (err error) {
+		proto := new(Proto)
+		proto.Ver = 1
+		// auth
+		// test handshake timeout
+		// time.Sleep(time.Second * 31)
+		proto.Operation = OP_AUTH
+		proto.SeqId = seqId
+		in := RPCInput{
+			Headers: map[string]string{
+				"uid": uid,
+			},
+		}
+		proto.Body, err = pb.Marshal(&in)
+		if err != nil {
+			log.Error("key:%s pb.Marshal(%v) error(%v)", uid, in, err)
+			return
+		}
+		if err = tcpWriteProto(wr, proto); err != nil {
+			log.Error("tcpWriteProto() error(%v)", err)
+			return
+		}
+		if err = tcpReadProto(rd, proto); err != nil {
+			log.Error("tcpReadProto() error(%v)", err)
+			return
+		}
+		log.Debug("key:%s tcp auth ok, proto: %v", uid, proto)
+		seqId++
 		return
 	}
-	if err = tcpWriteProto(wr, proto); err != nil {
-		log.Error("tcpWriteProto() error(%v)", err)
+	if err = authUser(key); err != nil {
 		return
 	}
-	if err = tcpReadProto(rd, proto); err != nil {
-		log.Error("tcpReadProto() error(%v)", err)
-		return
-	}
-	log.Debug("key:%s tcp auth ok, proto: %v", key, proto)
-	seqId++
+
 	// writer
 	go func() {
-		proto1 := new(Proto)
-		for {
-			// heartbeat
-			proto1.Operation = OP_HEARTBEAT
-			proto1.SeqId = seqId
-			proto1.Body = nil
-			if err = tcpWriteProto(wr, proto1); err != nil {
+
+		heartBeat := func() (err error) {
+			proto := new(Proto)
+			proto.Operation = OP_HEARTBEAT
+			proto.SeqId = seqId
+			proto.Body = nil
+			if err = tcpWriteProto(wr, proto); err != nil {
 				log.Error("key:%s tcpWriteProto() error(%v)", key, err)
 				return
 			}
-			log.Debug("key:%s tcp write heartbeat", key)
-			// test heartbeat
-			time.Sleep(heart)
+			//log.Debug("key:%s tcp write heartbeat", key)
 			seqId++
-			// test protobuf
-			queryUserAttentionList := func() {
-				// inner packet
-				req := PQueryUserAttentionListReq{}
-				req.Uid = 1304934619
-				req.AppData = "mobAttentionLite"
-				reqBuf, err := pb.Marshal(&req)
-				if err != nil {
-					log.Error("key:%s pb.Marshal(%v) error(%v)", key, req, err)
-					return
-				}
-				// outer packet
-				in := RPCInput{}
-				in.ServiceName = "YYLiteApp.AttentionSrv.AttentionObj"
-				in.MethodName = "QueryUserAttentionList"
-				in.RequestBuffer = reqBuf
-				inBuf, err := pb.Marshal(&in)
-				if err != nil {
-					log.Error("key:%s pb.Marshal(%v) error(%v)", key, in, err)
-					return
-				}
-				// send
-				proto1.Operation = OP_SEND_SMS
-				proto1.SeqId = seqId
-				proto1.Body = inBuf
-				if err = tcpWriteProto(wr, proto1); err != nil {
-					log.Error("key:%s tcpWriteProto(queryUserAttentionList) error(%v)", key, err)
-					return
-				}
-				log.Debug("key:%s tcp write queryUserAttentionList", key)
-				seqId++
+			return
+		}
+
+		enterRoom := func(uid, roomid int64) (err error) {
+			// inner packet
+			req := bilin.EnterBroRoomReq{
+				Header: &bilin.Header{
+					Userid: uint64(uid),
+					Roomid: uint64(roomid),
+				},
 			}
-			queryUserAttentionList()
-			// test change room
-			changeRoom := func() {
-				in := RPCInput{}
-				in.Headers = map[string]string{
-					"subscribe-room-push": "10",
-				}
-				inBuf, err := pb.Marshal(&in)
-				if err != nil {
-					log.Error("key:%s pb.Marshal(%v) error(%v)", key, in, err)
-					return
-				}
-				// send
-				proto1.Operation = OP_ROOM_CHANGE
-				proto1.SeqId = seqId
-				proto1.Body = inBuf
-				if err = tcpWriteProto(wr, proto1); err != nil {
-					log.Error("key:%s tcpWriteProto(changeRoom) error(%v)", key, err)
-					return
-				}
-				log.Debug("key:%s tcp write changeRoom", key)
-				seqId++
+			reqBuf, err := pb.Marshal(&req)
+			if err != nil {
+				log.Error("key:%s pb.Marshal(%v) error(%v)", key, req, err)
+				return
 			}
-			changeRoom()
+			// outer packet
+			in := RPCInput{
+				ServiceName: "bilin.bcserver2.BCServantObj",
+				MethodName: "EnterBroRoom",
+				RequestBuffer: reqBuf,
+				Headers: map[string]string{
+					"subscribe-room-push": strconv.FormatInt(roomid, 10),
+				},
+			}
+			inBuf, err := pb.Marshal(&in)
+			if err != nil {
+				log.Error("key:%s pb.Marshal(%v) error(%v)", key, in, err)
+				return
+			}
+			// tcp packet
+			proto := new(Proto)
+			proto.Operation = OP_ROOM_CHANGE
+			proto.SeqId = seqId
+			proto.Body = inBuf
+			if err = tcpWriteProto(wr, proto); err != nil {
+				log.Error("key:%s tcpWriteProto(op=%d) error(%v)", key, proto.Operation, err)
+				return
+			}
+			log.Info("key:%s tcp write op=%d", key, proto.Operation)
+			seqId++
+			return
+		}
+
+		for {
+			// send heartbeat
+			if err = heartBeat(); err != nil {
+				return
+			}
+			time.Sleep(heart)
+
+			// send enter room
+			uid, _ := strconv.ParseInt(key, 10, 64)
+			roomid := int64(10086)
+			if err = enterRoom(uid, roomid); err != nil {
+				return
+			}
+
+			// check quit
 			select {
 			case <-quit:
 				return
@@ -318,21 +334,23 @@ func startTcpClient(key string) {
 			}
 		}
 	}()
+
 	// reader
 	for {
+		proto := new(Proto)
 		if err = tcpReadProto(rd, proto); err != nil {
 			log.Error("key:%s tcpReadProto() error(%v)", key, err)
 			quit <- true
 			return
 		}
 		if proto.Operation == OP_HEARTBEAT_REPLY {
-			log.Debug("key:%s tcp receive heartbeat", key)
+			//log.Debug("key:%s tcp receive heartbeat", key)
 			if err = conn.SetReadDeadline(time.Now().Add(heart + 60*time.Second)); err != nil {
 				log.Error("conn.SetReadDeadline() error(%v)", err)
 				quit <- true
 				return
 			}
-			atomic.AddInt64(&countDown, 1)
+			//atomic.AddInt64(&countDown, 1)
 		} else if proto.Operation == OP_TEST_REPLY {
 			log.Debug("tcp body: %s", string(proto.Body))
 		} else if proto.Operation == OP_SEND_SMS_REPLY && proto.SeqId != 0 {
@@ -340,17 +358,18 @@ func startTcpClient(key string) {
 			out := RPCOutput{}
 			err = pb.Unmarshal(proto.Body, &out)
 			if err != nil {
-				log.Error("key:%s tcp receive OP_SEND_SMS_REPLY error(%v)", key, err)
+				log.Error("key:%s tcp receive rpc response error(%v)", key, err)
 				continue
 			}
 			// inner packet
 			rsp := PQueryUserAttentionListRsp{}
 			err = pb.Unmarshal(out.ResponseBuffer, &rsp)
 			if err != nil {
-				log.Error("key:%s tcp receive OP_SEND_SMS_REPLY error(%v)", key, err)
+				log.Error("key:%s tcp receive rpc response error(%v)", key, err)
 				continue
 			}
-			log.Debug("key:%s tcp queryUserAttentionList msg: %+v", key, rsp)
+			log.Info("key:%s tcp receive rpc response msg: %+v", key, rsp)
+			atomic.AddInt64(&countDown, 1)
 		} else if proto.Operation == OP_SEND_SMS_REPLY {
 			push := ServerPush{}
 			err = pb.Unmarshal(proto.Body, &push)
@@ -358,16 +377,17 @@ func startTcpClient(key string) {
 				log.Error("key:%s tcp receive server push error(%v)", key, err)
 				continue
 			}
-			log.Info("key:%s tcp push msg: %+v", key, push)
+			log.Info("key:%s tcp receive server push msg: %+v", key, push)
 			atomic.AddInt64(&countDown, 1)
 		} else if proto.Operation == OP_ROOM_CHANGE_REPLY {
 			out := RPCOutput{}
 			err = pb.Unmarshal(proto.Body, &out)
 			if err != nil {
-				log.Error("key:%s tcp receive OP_ROOM_CHANGE_REPLY error(%v)", key, err)
+				log.Error("key:%s tcp receive change room error(%v)", key, err)
 				continue
 			}
-			log.Info("key:%s tcp changeRoom msg: %+v", key, out)
+			log.Info("key:%s tcp receive change room msg: %+v", key, out)
+			atomic.AddInt64(&countDown, 1)
 		}
 	}
 }
