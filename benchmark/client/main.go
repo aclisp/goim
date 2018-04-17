@@ -307,7 +307,48 @@ func startTcpClient(key string) {
 				log.Error("key:%s tcpWriteProto(op=%d) error(%v)", key, proto.Operation, err)
 				return
 			}
-			log.Info("key:%s tcp write op=%d", key, proto.Operation)
+			log.Info("key:%s tcp write op=%d enter room", key, proto.Operation)
+			seqId++
+			return
+		}
+
+		exitRoom := func(uid, roomid int64) (err error) {
+			// inner packet
+			req := bilin.ExitBroRoomReq{
+				Header: &bilin.Header{
+					Userid: uint64(uid),
+					Roomid: uint64(roomid),
+				},
+			}
+			reqBuf, err := pb.Marshal(&req)
+			if err != nil {
+				log.Error("key:%s pb.Marshal(%v) error(%v)", key, req, err)
+				return
+			}
+			// outer packet
+			in := RPCInput{
+				ServiceName: "bilin.bcserver2.BCServantObj",
+				MethodName: "ExitBroRoom",
+				RequestBuffer: reqBuf,
+				Headers: map[string]string{
+					"subscribe-room-push": "-1",
+				},
+			}
+			inBuf, err := pb.Marshal(&in)
+			if err != nil {
+				log.Error("key:%s pb.Marshal(%v) error(%v)", key, in, err)
+				return
+			}
+			// tcp packet
+			proto := new(Proto)
+			proto.Operation = OP_ROOM_CHANGE
+			proto.SeqId = seqId
+			proto.Body = inBuf
+			if err = tcpWriteProto(wr, proto); err != nil {
+				log.Error("key:%s tcpWriteProto(op=%d) error(%v)", key, proto.Operation, err)
+				return
+			}
+			log.Info("key:%s tcp write op=%d exit room", key, proto.Operation)
 			seqId++
 			return
 		}
@@ -317,12 +358,20 @@ func startTcpClient(key string) {
 			if err = heartBeat(); err != nil {
 				return
 			}
-			time.Sleep(heart)
+			time.Sleep(1*time.Second)
 
 			// send enter room
 			uid, _ := strconv.ParseInt(key, 10, 64)
 			roomid := int64(10086)
 			if err = enterRoom(uid, roomid); err != nil {
+				return
+			}
+
+			// keep user in room
+			time.Sleep(heart)
+
+			// send exit room
+			if err = exitRoom(uid, roomid); err != nil {
 				return
 			}
 
