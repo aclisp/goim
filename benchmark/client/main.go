@@ -18,28 +18,28 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gorilla/websocket"
-	log "github.com/aclisp/log4go"
-	"net/url"
-	"net"
-	pb "github.com/golang/protobuf/proto"
 	"bilin/protocol"
+	log "github.com/aclisp/log4go"
+	pb "github.com/golang/protobuf/proto"
+	"github.com/gorilla/websocket"
+	"net"
+	"net/url"
 )
 
 const (
-	OP_HANDSHARE        = int32(0)
-	OP_HANDSHARE_REPLY  = int32(1)
-	OP_HEARTBEAT        = int32(2)
-	OP_HEARTBEAT_REPLY  = int32(3)
-	OP_SEND_SMS         = int32(4)
-	OP_SEND_SMS_REPLY   = int32(5)
-	OP_DISCONNECT_REPLY = int32(6)
-	OP_AUTH             = int32(7)
-	OP_AUTH_REPLY       = int32(8)
-	OP_ROOM_CHANGE      = int32(15)
+	OP_HANDSHARE         = int32(0)
+	OP_HANDSHARE_REPLY   = int32(1)
+	OP_HEARTBEAT         = int32(2)
+	OP_HEARTBEAT_REPLY   = int32(3)
+	OP_SEND_SMS          = int32(4)
+	OP_SEND_SMS_REPLY    = int32(5)
+	OP_DISCONNECT_REPLY  = int32(6)
+	OP_AUTH              = int32(7)
+	OP_AUTH_REPLY        = int32(8)
+	OP_ROOM_CHANGE       = int32(15)
 	OP_ROOM_CHANGE_REPLY = int32(16)
-	OP_TEST             = int32(254)
-	OP_TEST_REPLY       = int32(255)
+	OP_TEST              = int32(254)
+	OP_TEST_REPLY        = int32(255)
 )
 
 const (
@@ -286,8 +286,8 @@ func startTcpClient(key string) {
 			}
 			// outer packet
 			in := RPCInput{
-				ServiceName: "bilin.bcserver2.BCServantObj",
-				MethodName: "EnterBroRoom",
+				ServiceName:   "bilin.bcserver2.BCServantObj",
+				MethodName:    "EnterBroRoom",
 				RequestBuffer: reqBuf,
 				Headers: map[string]string{
 					"subscribe-room-push": strconv.FormatInt(roomid, 10),
@@ -327,8 +327,8 @@ func startTcpClient(key string) {
 			}
 			// outer packet
 			in := RPCInput{
-				ServiceName: "bilin.bcserver2.BCServantObj",
-				MethodName: "ExitBroRoom",
+				ServiceName:   "bilin.bcserver2.BCServantObj",
+				MethodName:    "ExitBroRoom",
 				RequestBuffer: reqBuf,
 				Headers: map[string]string{
 					"subscribe-room-push": "-1",
@@ -358,7 +358,7 @@ func startTcpClient(key string) {
 			if err = heartBeat(); err != nil {
 				return
 			}
-			time.Sleep(1*time.Second)
+			time.Sleep(1 * time.Second)
 
 			// send enter room
 			uid, _ := strconv.ParseInt(key, 10, 64)
@@ -374,6 +374,7 @@ func startTcpClient(key string) {
 			if err = exitRoom(uid, roomid); err != nil {
 				return
 			}
+			time.Sleep(10 * time.Second)
 
 			// check quit
 			select {
@@ -500,8 +501,8 @@ func tcpReadProto(rd *bufio.Reader, proto *Proto) (err error) {
 		return
 	}
 	var (
-		n       = int(0)
-		t       = int(0)
+		n = int(0)
+		t = int(0)
 	)
 	//log.Debug("read body len: %d", bodyLen)
 	if bodyLen > 0 {
