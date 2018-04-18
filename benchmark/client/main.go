@@ -411,14 +411,12 @@ func startTcpClient(key string) {
 				log.Error("key:%s tcp receive rpc response error(%v)", key, err)
 				continue
 			}
-			// inner packet
-			rsp := PQueryUserAttentionListRsp{}
-			err = pb.Unmarshal(out.ResponseBuffer, &rsp)
-			if err != nil {
-				log.Error("key:%s tcp receive rpc response error(%v)", key, err)
-				continue
+			if out.RetCode != 0 {
+				log.Warn("key:%s tcp receive rpc response code=%d: %s (service=%s method=%s)",
+					key, out.RetCode, out.RetDesc, out.ServiceName, out.MethodName)
 			}
-			log.Debug("key:%s tcp receive rpc response msg: %+v", key, rsp)
+			// inner packet TODO
+			log.Debug("key:%s tcp receive rpc response msg: %+v", key, out)
 			atomic.AddInt64(&countDown, 1)
 		} else if proto.Operation == OP_SEND_SMS_REPLY {
 			push := ServerPush{}
@@ -435,6 +433,10 @@ func startTcpClient(key string) {
 			if err != nil {
 				log.Error("key:%s tcp receive change room error(%v)", key, err)
 				continue
+			}
+			if out.RetCode != 0 {
+				log.Warn("key:%s tcp receive change room code=%d: %s (service=%s method=%s)",
+					key, out.RetCode, out.RetDesc, out.ServiceName, out.MethodName)
 			}
 			log.Debug("key:%s tcp receive change room msg: %+v", key, out)
 			atomic.AddInt64(&countDown, 1)
