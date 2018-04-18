@@ -10,7 +10,7 @@ import (
 	"encoding/binary"
 	"flag"
 	"fmt"
-	//mrand "math/rand"
+	mrand "math/rand"
 	"encoding/json"
 	"os"
 	"runtime"
@@ -196,7 +196,7 @@ func startWebsocketClient(key string) {
 			} else if proto.Operation == OP_TEST_REPLY {
 				log.Debug("websocket body: %s", string(proto.Body))
 			} else if proto.Operation == OP_SEND_SMS_REPLY {
-				log.Info("key:%s websocket msg: %s", key, string(proto.Body))
+				log.Debug("key:%s websocket msg: %s", key, string(proto.Body))
 				atomic.AddInt64(&countDown, 1)
 			}
 		}
@@ -204,7 +204,7 @@ func startWebsocketClient(key string) {
 }
 
 func startTcpClient(key string) {
-	//time.Sleep(time.Duration(mrand.Intn(30)) * time.Second)
+	time.Sleep(time.Duration(mrand.Intn(30)) * time.Second)
 	quit := make(chan bool, 1)
 	defer close(quit)
 
@@ -307,7 +307,7 @@ func startTcpClient(key string) {
 				log.Error("key:%s tcpWriteProto(op=%d) error(%v)", key, proto.Operation, err)
 				return
 			}
-			log.Info("key:%s tcp write op=%d enter room", key, proto.Operation)
+			log.Debug("key:%s tcp write op=%d enter room", key, proto.Operation)
 			seqId++
 			return
 		}
@@ -348,7 +348,7 @@ func startTcpClient(key string) {
 				log.Error("key:%s tcpWriteProto(op=%d) error(%v)", key, proto.Operation, err)
 				return
 			}
-			log.Info("key:%s tcp write op=%d exit room", key, proto.Operation)
+			log.Debug("key:%s tcp write op=%d exit room", key, proto.Operation)
 			seqId++
 			return
 		}
@@ -362,7 +362,7 @@ func startTcpClient(key string) {
 
 			// send enter room
 			uid, _ := strconv.ParseInt(key, 10, 64)
-			roomid := int64(10086)
+			roomid := int64(uid / 1000)
 			if err = enterRoom(uid, roomid); err != nil {
 				return
 			}
@@ -418,7 +418,7 @@ func startTcpClient(key string) {
 				log.Error("key:%s tcp receive rpc response error(%v)", key, err)
 				continue
 			}
-			log.Info("key:%s tcp receive rpc response msg: %+v", key, rsp)
+			log.Debug("key:%s tcp receive rpc response msg: %+v", key, rsp)
 			atomic.AddInt64(&countDown, 1)
 		} else if proto.Operation == OP_SEND_SMS_REPLY {
 			push := ServerPush{}
@@ -427,7 +427,7 @@ func startTcpClient(key string) {
 				log.Error("key:%s tcp receive server push error(%v)", key, err)
 				continue
 			}
-			log.Info("key:%s tcp receive server push msg: %+v", key, push)
+			log.Debug("key:%s tcp receive server push msg: %+v", key, push)
 			atomic.AddInt64(&countDown, 1)
 		} else if proto.Operation == OP_ROOM_CHANGE_REPLY {
 			out := RPCOutput{}
@@ -436,7 +436,7 @@ func startTcpClient(key string) {
 				log.Error("key:%s tcp receive change room error(%v)", key, err)
 				continue
 			}
-			log.Info("key:%s tcp receive change room msg: %+v", key, out)
+			log.Debug("key:%s tcp receive change room msg: %+v", key, out)
 			atomic.AddInt64(&countDown, 1)
 		}
 	}
