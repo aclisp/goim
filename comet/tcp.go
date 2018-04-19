@@ -16,7 +16,7 @@ import (
 	log "github.com/aclisp/log4go"
 )
 
-var tcpListener net.Listener
+var tcpListeners []*net.TCPListener
 
 // InitTCP listen all tcp.bind and start accept connections.
 func InitTCP(addrs []string, accept int) (err error) {
@@ -39,14 +39,14 @@ func InitTCP(addrs []string, accept int) (err error) {
 		for i := 0; i < accept; i++ {
 			go acceptTCP(DefaultServer, listener)
 		}
+		tcpListeners = append(tcpListeners, listener)
 	}
-	tcpListener = listener
 	return
 }
 
 func ShutdownTCP() {
-	if tcpListener != nil {
-		tcpListener.Close()
+	for _, l := range tcpListeners {
+		l.Close()
 	}
 }
 
