@@ -35,6 +35,7 @@ func reload() {
 		return
 	}
 	Conf = newConf
+	Debug = Conf.Debug
 	updateServerID()
 	updateWhitelist()
 }
