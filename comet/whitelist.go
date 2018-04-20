@@ -26,8 +26,8 @@ func NewWhitelist(file string, list []string) (w *Whitelist, err error) {
 		err = fmt.Errorf("can not open file: %s", file)
 		return
 	}
-	flw.SetFormat("[%D %T] [%L] [%S] %M")
-	flw.SetRotateSize(100 * 1024 * 1024)
+	flw.SetFormat("[%D %T] %M")
+	flw.SetRotateSize(1024 * 1024 * 1024)
 	flw.SetRotate(true)
 	w.Log.AddFilter("file", log.INFO, flw)
 	return

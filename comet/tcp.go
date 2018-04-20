@@ -142,7 +142,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 	tr.Set(trd, hb)
 	white = DefaultWhitelist.Contains(key)
 	if white {
-		DefaultWhitelist.Log.Info("key: %s[%d] auth", key, ch.RoomId)
+		DefaultWhitelist.Log.Info("key: %s auth ok. room is %d", key, ch.RoomId)
 	}
 	// hanshake ok start dispatch goroutine
 	go server.dispatchTCP(key, conn, wr, wp, wb, ch)
@@ -151,14 +151,14 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 			break
 		}
 		if white {
-			DefaultWhitelist.Log.Info("key: %s start read proto", key)
+			DefaultWhitelist.Log.Info("key: %s read TCP...", key)
 		}
 		if err = p.ReadTCP(rr); err != nil {
 			break
 		}
 		log.Debug("%p Rx %s tcp serve %+v", conn, key, p)
 		if white {
-			DefaultWhitelist.Log.Info("key: %s read proto: %v", key, p)
+			DefaultWhitelist.Log.Info("key: %s Rx %+v", key, p)
 		}
 		if p.Operation == define.OP_AUTH {
 			p.Body = nil
@@ -214,13 +214,10 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 				break
 			}
 		}
-		if white {
-			DefaultWhitelist.Log.Info("key: %s processed proto: %v", key, p)
-		}
 		ch.CliProto.SetAdv()
 		ch.Signal()
 		if white {
-			DefaultWhitelist.Log.Info("key: %s signal", key)
+			DefaultWhitelist.Log.Info("key: %s processed and signal", key)
 		}
 	}
 	if white {
@@ -264,7 +261,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 	}
 	for {
 		if white {
-			DefaultWhitelist.Log.Info("key: %s wait proto ready", key)
+			DefaultWhitelist.Log.Info("key: %s wait proto ready...", key)
 		}
 		var p = ch.Ready()
 		if white {
@@ -291,21 +288,21 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 					break
 				}
 				if white {
-					DefaultWhitelist.Log.Info("key: %s start write client proto: %v", key, p)
+					DefaultWhitelist.Log.Info("key: %s start write client proto", key)
 				}
 				if err = p.WriteTCP(wr); err != nil {
 					goto failed
 				}
 				log.Debug("%p Tx %s tcp dispatch %+v", conn, key, p)
 				if white {
-					DefaultWhitelist.Log.Info("key: %s written client proto: %v", key, p)
+					DefaultWhitelist.Log.Info("key: %s Tx %+v", key, p)
 				}
 				p.Body = nil // avoid memory leak
 				ch.CliProto.GetAdv()
 			}
 		default:
 			if white {
-				DefaultWhitelist.Log.Info("key: %s start write server proto: %v", key, p)
+				DefaultWhitelist.Log.Info("key: %s start write server proto", key)
 			}
 			// server send
 			if err = p.WriteTCP(wr); err != nil {
@@ -313,7 +310,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 			}
 			log.Debug("%p Tx %s tcp dispatch %+v", conn, key, p)
 			if white {
-				DefaultWhitelist.Log.Info("key: %s written server proto: %v", key, p)
+				DefaultWhitelist.Log.Info("key: %s Tx %+v", key, p)
 			}
 		}
 		if white {
@@ -324,7 +321,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 			break
 		}
 		if white {
-			DefaultWhitelist.Log.Info("key: %s flush", key)
+			DefaultWhitelist.Log.Info("key: %s flushed", key)
 		}
 		if p != nil && p.Operation == define.OP_DISCONNECT_REPLY {
 			log.Warn("%p key: %s kicked", conn, key)

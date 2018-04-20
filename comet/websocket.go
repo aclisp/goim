@@ -118,7 +118,9 @@ func ServeWebSocket(w http.ResponseWriter, req *http.Request) {
 		rAddr = ws.RemoteAddr()
 		tr    = DefaultServer.round.Timer(rand.Int())
 	)
-	log.Debug("start websocket serve \"%s\" with \"%s\"", lAddr, rAddr)
+	if Debug {
+		log.Debug("start websocket serve \"%s\" with \"%s\"", lAddr, rAddr)
+	}
 	DefaultServer.serveWebsocket(ws, tr)
 }
 
