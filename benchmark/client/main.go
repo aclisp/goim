@@ -8,10 +8,11 @@ package main
 import (
 	"bufio"
 	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
 	"flag"
 	"fmt"
 	mrand "math/rand"
-	"encoding/json"
 	"os"
 	"runtime"
 	"strconv"
@@ -353,6 +354,42 @@ func startTcpClient(key string) {
 			return
 		}
 
+		sendRoomMessage := func(uid, roomid int64) (err error) {
+			req := bilin.SendRoomMessageReq{
+				Header: &bilin.Header{
+					Userid: uint64(uid),
+					Roomid: uint64(roomid),
+				},
+				Data: "Hello Room!",
+			}
+			reqBuf, err := pb.Marshal(&req)
+			if err != nil {
+				log.Error("key:%s pb.Marshal(%v) error(%v)", key, req, err)
+				return
+			}
+			in := RPCInput{
+				ServiceName:   "bilin.bcserver2.BCServantObj",
+				MethodName:    "SendRoomMessage",
+				RequestBuffer: reqBuf,
+			}
+			inBuf, err := pb.Marshal(&in)
+			if err != nil {
+				log.Error("key:%s pb.Marshal(%v) error(%v)", key, in, err)
+				return
+			}
+			proto := new(Proto)
+			proto.Operation = OP_SEND_SMS
+			proto.SeqId = seqId
+			proto.Body = inBuf
+			if err = tcpWriteProto(wr, proto); err != nil {
+				log.Error("key:%s tcpWriteProto(op=%d) error(%v)", key, proto.Operation, err)
+				return
+			}
+			log.Debug("key:%s tcp write op=%d sendRoomMessage", key, proto.Operation)
+			seqId++
+			return
+		}
+
 		for {
 			// send heartbeat
 			if err = heartBeat(); err != nil {
@@ -364,6 +401,11 @@ func startTcpClient(key string) {
 			uid, _ := strconv.ParseInt(key, 10, 64)
 			roomid := int64(uid / 1000)
 			if err = enterRoom(uid, roomid); err != nil {
+				return
+			}
+
+			// do something in room
+			if err = sendRoomMessage(uid, roomid); err != nil {
 				return
 			}
 
@@ -402,7 +444,7 @@ func startTcpClient(key string) {
 			}
 			//atomic.AddInt64(&countDown, 1)
 		} else if proto.Operation == OP_TEST_REPLY {
-			log.Debug("tcp body: %s", string(proto.Body))
+			log.Debug("tcp body: \n%s", hex.Dump(proto.Body))
 		} else if proto.Operation == OP_SEND_SMS_REPLY && proto.SeqId != 0 {
 			// outer packet
 			out := RPCOutput{}
@@ -416,7 +458,8 @@ func startTcpClient(key string) {
 					key, out.RetCode, out.RetDesc, out.ServiceName, out.MethodName)
 			}
 			// inner packet TODO
-			log.Debug("key:%s tcp receive rpc response msg: %+v", key, out)
+			log.Debug("key:%s tcp receive rpc response: (service=%s method=%s) \n%s",
+				key, out.ServiceName, out.MethodName, hex.Dump(out.ResponseBuffer))
 			atomic.AddInt64(&countDown, 1)
 		} else if proto.Operation == OP_SEND_SMS_REPLY {
 			push := ServerPush{}
@@ -425,20 +468,22 @@ func startTcpClient(key string) {
 				log.Error("key:%s tcp receive server push error(%v)", key, err)
 				continue
 			}
-			log.Debug("key:%s tcp receive server push msg: %+v", key, push)
+			log.Debug("key:%s tcp receive server push: (type=%d service=%s method=%s) \n%s",
+				key, push.MessageType, push.ServiceName, push.MethodName, hex.Dump(push.PushBuffer))
 			atomic.AddInt64(&countDown, 1)
 		} else if proto.Operation == OP_ROOM_CHANGE_REPLY {
 			out := RPCOutput{}
 			err = pb.Unmarshal(proto.Body, &out)
 			if err != nil {
-				log.Error("key:%s tcp receive change room error(%v)", key, err)
+				log.Error("key:%s tcp receive change room response error(%v)", key, err)
 				continue
 			}
 			if out.RetCode != 0 {
-				log.Warn("key:%s tcp receive change room code=%d: %s (service=%s method=%s)",
+				log.Warn("key:%s tcp receive change room response code=%d: %s (service=%s method=%s)",
 					key, out.RetCode, out.RetDesc, out.ServiceName, out.MethodName)
 			}
-			log.Debug("key:%s tcp receive change room msg: %+v", key, out)
+			log.Debug("key:%s tcp receive change room response: (service=%s method=%s) \n%s",
+				key, out.ServiceName, out.MethodName, hex.Dump(out.ResponseBuffer))
 			atomic.AddInt64(&countDown, 1)
 		}
 	}
