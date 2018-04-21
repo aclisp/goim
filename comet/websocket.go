@@ -118,9 +118,7 @@ func ServeWebSocket(w http.ResponseWriter, req *http.Request) {
 		rAddr = ws.RemoteAddr()
 		tr    = DefaultServer.round.Timer(rand.Int())
 	)
-	if Debug {
-		log.Debug("start websocket serve \"%s\" with \"%s\"", lAddr, rAddr)
-	}
+	log.Debug("start websocket serve \"%s\" with \"%s\"", lAddr, rAddr)
 	DefaultServer.serveWebsocket(ws, tr)
 }
 
@@ -197,9 +195,9 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 	}
 	if err != nil {
 		if websocket.IsCloseError(err, websocket.CloseGoingAway) {
-			log.Debug("key: %s server websocket failed error(%v)", key, err)
+			log.Debug("key: %s serve websocket failed error(%v)", key, err)
 		} else {
-			log.Error("key: %s server websocket failed error(%v)", key, err)
+			log.Error("key: %s serve websocket failed error(%v)", key, err)
 		}
 	}
 	tr.Del(trd)
@@ -210,7 +208,7 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 		log.Error("key: %s operator do disconnect error(%v)", key, err)
 	}
 	if Debug {
-		log.Debug("key: %s server websocket goroutine exit", key)
+		log.Debug("key: %s serve websocket goroutine exit", key)
 	}
 	return
 }

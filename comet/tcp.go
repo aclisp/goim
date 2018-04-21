@@ -94,9 +94,7 @@ func serveTCP(server *Server, conn *net.TCPConn, r int) {
 		lAddr = conn.LocalAddr().String()
 		rAddr = conn.RemoteAddr().String()
 	)
-	if Debug {
-		log.Debug("%p start tcp serve \"%s\" with \"%s\"", conn, lAddr, rAddr)
-	}
+	log.Debug("%p start tcp serve \"%s\" with \"%s\"", conn, lAddr, rAddr)
 	server.serveTCP(conn, rp, wp, tr)
 }
 
@@ -156,7 +154,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 		if err = p.ReadTCP(rr); err != nil {
 			break
 		}
-		log.Debug("%p Rx %s tcp serve %+v", conn, key, p)
+		log.Debug("%p key: %s Rx tcp serve %+v", conn, key, p)
 		if white {
 			DefaultWhitelist.Log.Info("key: %s Rx %+v", key, p)
 		}
@@ -221,13 +219,13 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 		}
 	}
 	if white {
-		DefaultWhitelist.Log.Info("key: %s server tcp error(%v)", key, err)
+		DefaultWhitelist.Log.Info("key: %s serve tcp error(%v)", key, err)
 	}
 	if err != nil {
 		if err == io.EOF {
-			log.Debug("%p key: %s server tcp failed error(%v)", conn, key, err)
+			log.Debug("%p key: %s serve tcp failed error(%v)", conn, key, err)
 		} else {
-			log.Error("%p key: %s server tcp failed error(%v)", conn, key, err)
+			log.Error("%p key: %s serve tcp failed error(%v)", conn, key, err)
 		}
 	}
 	b.Del(key)
@@ -242,7 +240,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 		DefaultWhitelist.Log.Info("key: %s disconnect error(%v)", key, err)
 	}
 	if Debug {
-		log.Debug("%p key: %s server tcp goroutine exit", conn, key)
+		log.Debug("%p key: %s serve tcp goroutine exit", conn, key)
 	}
 	return
 }
@@ -293,7 +291,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 				if err = p.WriteTCP(wr); err != nil {
 					goto failed
 				}
-				log.Debug("%p Tx %s tcp dispatch %+v", conn, key, p)
+				log.Debug("%p key: %s Tx tcp dispatch %+v", conn, key, p)
 				if white {
 					DefaultWhitelist.Log.Info("key: %s Tx %+v", key, p)
 				}
@@ -308,7 +306,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 			if err = p.WriteTCP(wr); err != nil {
 				goto failed
 			}
-			log.Debug("%p Tx %s tcp dispatch %+v", conn, key, p)
+			log.Debug("%p key: %s Tx tcp dispatch %+v", conn, key, p)
 			if white {
 				DefaultWhitelist.Log.Info("key: %s Tx %+v", key, p)
 			}
@@ -414,7 +412,7 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 		return
 	}
 	err = wr.Flush()
-	log.Debug("%p Tx %s tcp auth %+v", conn, key, p)
+	log.Debug("%p key: %s Tx tcp auth %+v", conn, key, p)
 	p.Body = nil
 	return
 }
