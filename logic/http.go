@@ -158,7 +158,9 @@ func Push(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	res["ret"] = OK
-	res["offline"] = userOff
+	if len(userOff) > 0 {
+		res["offline"] = userOff
+	}
 	return
 }
 
@@ -272,7 +274,9 @@ func Pushs(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	res["ret"] = OK
-	res["offline"] = userOff
+	if len(userOff) > 0 {
+		res["offline"] = userOff
+	}
 	return
 }
 
