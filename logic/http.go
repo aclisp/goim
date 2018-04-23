@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	pb "github.com/golang/protobuf/proto"
 	log "github.com/aclisp/log4go"
+	pb "github.com/golang/protobuf/proto"
 )
 
 func InitHTTP() (err error) {
@@ -94,6 +94,8 @@ func Push(w http.ResponseWriter, r *http.Request) {
 		bodyBytes []byte
 		bodyTyped ServerPush
 		userId    int64
+		userOn    = make(map[int64]bool)
+		userOff   []int64
 		appId     int64
 		err       error
 		param     = r.URL.Query()
@@ -140,12 +142,23 @@ func Push(w http.ResponseWriter, r *http.Request) {
 	userId = (appId << 48) | userId
 	subKeys = genSubKey(userId)
 	for serverId, keys = range subKeys {
+		for _, key := range keys {
+			if uid, _, err := decode(key); err == nil {
+				userOn[uid] = true
+			}
+		}
 		if err = mpushKafka(serverId, keys, bodyBytes, kick); err != nil {
 			res["ret"] = InternalErr
 			return
 		}
 	}
+	for _, uid := range []int64{userId} {
+		if !userOn[uid] {
+			userOff = append(userOff, uid)
+		}
+	}
 	res["ret"] = OK
+	res["offline"] = userOff
 	return
 }
 
@@ -205,6 +218,8 @@ func Pushs(w http.ResponseWriter, r *http.Request) {
 		bodyTyped ServerPush
 		serverId  int32
 		userIds   []int64
+		userOn    = make(map[int64]bool)
+		userOff   []int64
 		err       error
 		res       = map[string]interface{}{"ret": OK}
 		subKeys   map[int32][]string
@@ -241,12 +256,23 @@ func Pushs(w http.ResponseWriter, r *http.Request) {
 	}
 	subKeys = genSubKeys(userIds)
 	for serverId, keys = range subKeys {
+		for _, key := range keys {
+			if uid, _, err := decode(key); err == nil {
+				userOn[uid] = true
+			}
+		}
 		if err = mpushKafka(serverId, keys, bodyBytes, false); err != nil {
 			res["ret"] = InternalErr
 			return
 		}
 	}
+	for _, uid := range userIds {
+		if !userOn[uid] {
+			userOff = append(userOff, uid)
+		}
+	}
 	res["ret"] = OK
+	res["offline"] = userOff
 	return
 }
 
