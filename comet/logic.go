@@ -82,7 +82,7 @@ func connect(p *proto.Proto) (key string, rid int64, heartbeat time.Duration, er
 	}
 	key = reply.Key
 	rid = reply.RoomId
-	heartbeat = 5 * 60 * time.Second
+	heartbeat = Conf.IdleTimeout
 	return
 }
 

@@ -190,6 +190,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 			} else {
 				ret = 0
 				msg = fmt.Sprintf("change roomid %d->%d ok", orid, rid)
+				tr.Set(trd, hb)
 				server.operator.ChangeRoom(key, orid, rid)
 				// update conn opt once change roomid ok
 				opt[define.AppID] = strconv.FormatInt(appid, 10)
@@ -211,6 +212,8 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 			if err = server.operator.Operate(p, TCPConn, opt); err != nil {
 				break
 			}
+			tr.Set(trd, hb)
+			server.operator.Update(key, ch.RoomId)
 		}
 		ch.CliProto.SetAdv()
 		ch.Signal()

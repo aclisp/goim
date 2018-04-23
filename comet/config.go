@@ -76,6 +76,7 @@ type Config struct {
 	// proto section
 	HandshakeTimeout time.Duration `goconf:"proto:handshake.timeout:time"`
 	WriteTimeout     time.Duration `goconf:"proto:write.timeout:time"`
+	IdleTimeout      time.Duration `goconf:"proto:idle.timeout:time"`
 	SvrProto         int           `goconf:"proto:svr.proto"`
 	CliProto         int           `goconf:"proto:cli.proto"`
 	// timer
@@ -124,6 +125,7 @@ func NewConfig() *Config {
 		// proto section
 		HandshakeTimeout: 5 * time.Second,
 		WriteTimeout:     5 * time.Second,
+		IdleTimeout:      5 * time.Minute,
 		TCPReadBuf:       1024,
 		TCPWriteBuf:      1024,
 		TCPReadBufSize:   1024,

@@ -180,6 +180,7 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 			} else {
 				ret = 0
 				msg = fmt.Sprintf("change roomid %d->%d ok", orid, rid)
+				tr.Set(trd, hb)
 				server.operator.ChangeRoom(key, orid, rid)
 			}
 			p.Body = []byte(fmt.Sprintf(`{"ret":%d,"msg":%q}`, ret, msg))
@@ -189,6 +190,8 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 			if err = server.operator.Operate(p, WebsocketConn, opt); err != nil {
 				break
 			}
+			tr.Set(trd, hb)
+			server.operator.Update(key, ch.RoomId)
 		}
 		ch.CliProto.SetAdv()
 		ch.Signal()
