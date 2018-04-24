@@ -199,7 +199,6 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 			if len(input.Obj) > 0 {
 				output, err = server.operator.Direct(input, TCPConn, opt)
 				if err != nil {
-					ret = 3
 					msg = err.Error()
 				}
 			}
