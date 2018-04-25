@@ -36,7 +36,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&confFile, "c", "./comet.conf", " set comet config file path")
+	flag.StringVar(&confFile, "c", "comet.conf", " set comet config file path")
 }
 
 type Config struct {
