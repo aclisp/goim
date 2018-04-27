@@ -7,6 +7,7 @@ import (
 	"net/rpc"
 
 	log "github.com/aclisp/log4go"
+	pb "github.com/golang/protobuf/proto"
 )
 
 func InitRPC(auther Auther) (err error) {
@@ -51,7 +52,7 @@ func (r *RPC) Ping(arg *proto.NoArg, reply *proto.NoReply) error {
 	return nil
 }
 
-// Connect auth and registe login
+// Connect auth and login
 func (r *RPC) Connect(arg *proto.ConnArg, reply *proto.ConnReply) (err error) {
 	if arg == nil {
 		err = ErrConnectArgs
@@ -68,6 +69,29 @@ func (r *RPC) Connect(arg *proto.ConnArg, reply *proto.ConnReply) (err error) {
 	}
 	if seq, err = connect(uid, arg.Server, reply.RoomId); err == nil {
 		reply.Key = encode(uid, seq)
+		// Notify other clients that I just logged in
+		subKeys := genSubKey(uid)
+		for serverId, keys := range subKeys {
+			others := keys[:0]
+			for _, x := range keys {
+				if reply.Key != x {
+					others = append(others, x)
+				}
+			}
+			if len(others) == 0 {
+				continue
+			}
+			msg := ServerPush{MessageType: 9}
+			var buf []byte
+			if buf, err = pb.Marshal(&msg); err != nil {
+				log.Warn("Connect() notify others, protobuf marshal error(%v)", err)
+				continue
+			}
+			if err = mpushKafka(serverId, others, buf, false); err != nil {
+				log.Warn("Connect() notify others, mpush error(%v)", err)
+			}
+		}
+		err = nil
 	}
 	return
 }
