@@ -155,8 +155,8 @@ func (p *Proto) WriteTCP(wr *bufio.Writer) (err error) {
 	return
 }
 
-// ProtoForJSON is identical to Proto, and allows arbitrary content in body.
-type ProtoForJSON struct {
+// ProtoRaw is identical to Proto, and allows arbitrary content in body.
+type ProtoRaw struct {
 	Ver       int16   `json:"ver"`  // protocol version
 	Operation int32   `json:"op"`   // operation for request
 	SeqId     int32   `json:"seq"`  // sequence number chosen by client
@@ -173,7 +173,8 @@ func (p *Proto) ReadWebsocket(wr *websocket.Conn) (err error) {
 
 func (p *Proto) WriteBodyTo(b *bytes.Writer) (err error) {
 	var (
-		ph  ProtoForJSON
+		ph  Proto
+		pr  ProtoRaw
 		js  []json.RawMessage
 		j   json.RawMessage
 		jb  []byte
@@ -196,7 +197,13 @@ func (p *Proto) WriteBodyTo(b *bytes.Writer) (err error) {
 		ph.SeqId = binary.BigEndian.Int32(packBuf[SeqOffset:BodyLengthOffset])
 		ph.Body = packBuf[BodyOffset:]
 		if jb, err = json.Marshal(&ph); err != nil {
-			return
+			pr.Ver = ph.Ver
+			pr.Operation = ph.Operation
+			pr.SeqId = ph.SeqId
+			pr.Body = ph.Body
+			if jb, err = json.Marshal(&pr); err != nil {
+				return
+			}
 		}
 		j = json.RawMessage(jb)
 		js = append(js, j)
@@ -223,11 +230,13 @@ func (p *Proto) WriteWebsocket(wr *websocket.Conn) (err error) {
 		err = wr.WriteMessage(websocket.TextMessage, b.Buffer())
 		return
 	}
-	var ph ProtoForJSON
-	ph.Ver = p.Ver
-	ph.Operation = p.Operation
-	ph.SeqId = p.SeqId
-	ph.Body = p.Body
-	err = wr.WriteJSON([]*ProtoForJSON{&ph})
+	if err = wr.WriteJSON([]*Proto{p}); err != nil {
+		var pr ProtoRaw
+		pr.Ver = p.Ver
+		pr.Operation = p.Operation
+		pr.SeqId = p.SeqId
+		pr.Body = p.Body
+		err = wr.WriteJSON([]*ProtoRaw{&pr})
+	}
 	return
 }
