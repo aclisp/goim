@@ -230,13 +230,16 @@ func (p *Proto) WriteWebsocket(wr *websocket.Conn) (err error) {
 		err = wr.WriteMessage(websocket.TextMessage, b.Buffer())
 		return
 	}
-	if err = wr.WriteJSON([]*Proto{p}); err != nil {
+	var jb []byte
+	if jb, err = json.Marshal([]*Proto{p}); err != nil {
 		var pr ProtoRaw
 		pr.Ver = p.Ver
 		pr.Operation = p.Operation
 		pr.SeqId = p.SeqId
 		pr.Body = p.Body
 		err = wr.WriteJSON([]*ProtoRaw{&pr})
+		return
 	}
+	err = wr.WriteMessage(websocket.TextMessage, jb)
 	return
 }
