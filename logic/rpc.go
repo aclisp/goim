@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	inet "goim/libs/net"
 	"goim/libs/proto"
 	"net"
@@ -69,6 +70,12 @@ func (r *RPC) Connect(arg *proto.ConnArg, reply *proto.ConnReply) (err error) {
 	}
 	if seq, err = connect(uid, arg.Server, reply.RoomId); err == nil {
 		reply.Key = encode(uid, seq)
+		// Determine encoding type
+		pbenc := true
+		input := proto.RPCInput{}
+		if err = pb.Unmarshal(arg.Body, &input); err != nil {
+			pbenc = false
+		}
 		// Notify other clients that I just logged in
 		subKeys := genSubKey(uid)
 		for serverId, keys := range subKeys {
@@ -83,8 +90,13 @@ func (r *RPC) Connect(arg *proto.ConnArg, reply *proto.ConnReply) (err error) {
 			}
 			msg := ServerPush{MessageType: 9}
 			var buf []byte
-			if buf, err = pb.Marshal(&msg); err != nil {
-				log.Warn("Connect() notify others, protobuf marshal error(%v)", err)
+			if pbenc {
+				buf, err = pb.Marshal(&msg)
+			} else {
+				buf, err = json.Marshal(&msg)
+			}
+			if err != nil {
+				log.Warn("Connect() notify others, marshal error(%v)", err)
 				continue
 			}
 			if err = mpushKafka(serverId, others, buf, false); err != nil {

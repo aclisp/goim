@@ -1,16 +1,17 @@
 package main
 
 import (
-	"code.yy.com/yytars/goframework/tars/servant"
 	"context"
 	"encoding/hex"
 	"fmt"
-	log "github.com/aclisp/log4go"
-	pb "github.com/golang/protobuf/proto"
 	"goim/libs/define"
 	"goim/libs/proto"
 	otp "goim/logic/extproto"
 	"strconv"
+
+	"code.yy.com/yytars/goframework/tars/servant"
+	log "github.com/aclisp/log4go"
+	pb "github.com/golang/protobuf/proto"
 )
 
 type UdbIntlAuther struct {
@@ -38,7 +39,7 @@ func (a *UdbIntlAuther) Auth(body []byte) (userId int64, roomId int64, err error
 	}()
 	input := proto.RPCInput{}
 	if err = pb.Unmarshal(body, &input); err != nil {
-		log.Warn("auth body is not a valid protobuf: %v", err)
+		log.Debug("auth body is not a valid protobuf: %v", err)
 		return authWithString(string(body))
 	}
 	if _, ok := input.Opt[define.AppID]; ok {
