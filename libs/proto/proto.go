@@ -155,6 +155,14 @@ func (p *Proto) WriteTCP(wr *bufio.Writer) (err error) {
 	return
 }
 
+// ProtoForJSON is identical to Proto, and allows arbitrary content in body.
+type ProtoForJSON struct {
+	Ver       int16   `json:"ver"`  // protocol version
+	Operation int32   `json:"op"`   // operation for request
+	SeqId     int32   `json:"seq"`  // sequence number chosen by client
+	Body      []byte  `json:"body"` // binary body bytes([]byte encodes as a base64-encoded string)
+}
+
 func (p *Proto) ReadWebsocket(wr *websocket.Conn) (err error) {
 	if p.Body != nil {
 		panic("memory pointed by p.Body may be overwritten after ReadWebsocket")
@@ -165,7 +173,7 @@ func (p *Proto) ReadWebsocket(wr *websocket.Conn) (err error) {
 
 func (p *Proto) WriteBodyTo(b *bytes.Writer) (err error) {
 	var (
-		ph  Proto
+		ph  ProtoForJSON
 		js  []json.RawMessage
 		j   json.RawMessage
 		jb  []byte
@@ -215,6 +223,11 @@ func (p *Proto) WriteWebsocket(wr *websocket.Conn) (err error) {
 		err = wr.WriteMessage(websocket.TextMessage, b.Buffer())
 		return
 	}
-	err = wr.WriteJSON([]*Proto{p})
+	var ph ProtoForJSON
+	ph.Ver = p.Ver
+	ph.Operation = p.Operation
+	ph.SeqId = p.SeqId
+	ph.Body = p.Body
+	err = wr.WriteJSON([]*ProtoForJSON{&ph})
 	return
 }
