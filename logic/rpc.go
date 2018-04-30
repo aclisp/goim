@@ -70,6 +70,9 @@ func (r *RPC) Connect(arg *proto.ConnArg, reply *proto.ConnReply) (err error) {
 	if seq, err = connect(uid, arg.Server, reply.RoomId); err == nil {
 		reply.Key = encode(uid, seq)
 		// Notify other clients that I just logged in
+		if uid == 0 {
+			return
+		}
 		subKeys := genSubKey(uid)
 		for serverId, keys := range subKeys {
 			others := keys[:0]
@@ -81,7 +84,7 @@ func (r *RPC) Connect(arg *proto.ConnArg, reply *proto.ConnReply) (err error) {
 			if len(others) == 0 {
 				continue
 			}
-			msg := ServerPush{MessageType: 9}
+			msg := ServerPush{MessageType: 9}  // LOGIN_ELSEWHERE = 9
 			var buf []byte
 			if buf, err = pb.Marshal(&msg); err != nil {
 				log.Warn("Connect() notify others, marshal error(%v)", err)
