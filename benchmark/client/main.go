@@ -66,9 +66,8 @@ var (
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	log.Global = log.NewDefaultLogger(log.DEBUG)
 	flag.Parse()
-	defer log.Close()
+
 	begin, err := strconv.Atoi(os.Args[1])
 	if err != nil {
 		panic(err)
@@ -78,6 +77,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	if num > 1 {
+		log.Global = log.NewDefaultLogger(log.INFO)
+	} else {
+		log.Global = log.NewDefaultLogger(log.DEBUG)
+	}
+	defer log.Close()
 
 	go result()
 
@@ -231,7 +237,9 @@ func startTcpClient(key string) {
 		proto.SeqId = seqId
 		in := RPCInput{
 			Headers: map[string]string{
-				"uid": uid,
+				"uid":             uid,
+				"token":           "RUbuha8aWzdMuI5bl/Lx4jrZgJs=",
+				"token-timestamp": "1234567890",
 			},
 		}
 		proto.Body, err = pb.Marshal(&in)
@@ -247,7 +255,17 @@ func startTcpClient(key string) {
 			log.Error("tcpReadProto() error(%v)", err)
 			return
 		}
-		log.Debug("key:%s tcp auth ok, proto: %v", uid, proto)
+		out := RPCOutput{}
+		if err = pb.Unmarshal(proto.Body, &out); err != nil {
+			log.Error("key:%s pb.Unmarshal error(%v)", uid, err)
+			return
+		}
+		if out.RetCode != 0 {
+			log.Error("key:%s %s", uid, out.RetDesc)
+			err = fmt.Errorf("%s", out.RetDesc)
+			return
+		}
+		log.Debug("key:%s %s", uid, out.RetDesc)
 		seqId++
 		return
 	}
@@ -360,7 +378,7 @@ func startTcpClient(key string) {
 					Userid: uint64(uid),
 					Roomid: uint64(roomid),
 				},
-				Data: "Hello Room!",
+				Data: []byte("Hello Room!"),
 			}
 			reqBuf, err := pb.Marshal(&req)
 			if err != nil {
@@ -399,24 +417,25 @@ func startTcpClient(key string) {
 
 			// send enter room
 			uid, _ := strconv.ParseInt(key, 10, 64)
-			roomid := int64(uid / 1000)
+			roomid := int64(uid / 100)
 			if err = enterRoom(uid, roomid); err != nil {
 				return
 			}
 
 			// do something in room
-			if err = sendRoomMessage(uid, roomid); err != nil {
-				return
-			}
+			_ = sendRoomMessage
+			//if err = sendRoomMessage(uid, roomid); err != nil {
+			//	return
+			//}
 
 			// keep user in room
-			time.Sleep(heart)
+			time.Sleep(3 * time.Second)
 
 			// send exit room
 			if err = exitRoom(uid, roomid); err != nil {
 				return
 			}
-			time.Sleep(10 * time.Second)
+			time.Sleep(1 * time.Second)
 
 			// check quit
 			select {
@@ -456,10 +475,11 @@ func startTcpClient(key string) {
 			if out.RetCode != 0 {
 				log.Warn("key:%s tcp receive rpc response code=%d: %s (service=%s method=%s)",
 					key, out.RetCode, out.RetDesc, out.ServiceName, out.MethodName)
+			} else {
+				// inner packet TODO
+				log.Debug("key:%s tcp receive rpc response: (service=%s method=%s) \n%s",
+					key, out.ServiceName, out.MethodName, hex.Dump(out.ResponseBuffer))
 			}
-			// inner packet TODO
-			log.Debug("key:%s tcp receive rpc response: (service=%s method=%s) \n%s",
-				key, out.ServiceName, out.MethodName, hex.Dump(out.ResponseBuffer))
 			atomic.AddInt64(&countDown, 1)
 		} else if proto.Operation == OP_SEND_SMS_REPLY {
 			push := ServerPush{}
@@ -481,9 +501,10 @@ func startTcpClient(key string) {
 			if out.RetCode != 0 {
 				log.Warn("key:%s tcp receive change room response code=%d: %s (service=%s method=%s)",
 					key, out.RetCode, out.RetDesc, out.ServiceName, out.MethodName)
+			} else {
+				log.Debug("key:%s tcp receive change room response: (service=%s method=%s) \n%s",
+					key, out.ServiceName, out.MethodName, hex.Dump(out.ResponseBuffer))
 			}
-			log.Debug("key:%s tcp receive change room response: (service=%s method=%s) \n%s",
-				key, out.ServiceName, out.MethodName, hex.Dump(out.ResponseBuffer))
 			atomic.AddInt64(&countDown, 1)
 		}
 	}
