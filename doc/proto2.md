@@ -213,3 +213,41 @@ message MultiPush {
 ```
 curl -d "<protobuf bytes>" 'http://test-goim.yy.com:7172/1/pushs'
 ```
+
+## 在线用户查询服务
+
+业务向推送 URL 发送 GET http。
+
+### 查在线用户总数
+
+返回每个接入服务器上的连接数，和接入服务器地址。
+
+```
+curl http://test-goim.yy.com:7172/1/count?type=server
+```
+
+### 查有人房间列表
+
+返回所有房间ID和房间内用户总数
+
+```
+curl http://test-goim.yy.com:7172/1/count?type=room
+```
+
+### 查所有在线用户ID
+
+```
+curl http://test-goim.yy.com:7172/1/list
+```
+
+### 查用户ID是否在线，在哪个房间
+
+```
+curl http://test-goim.yy.com:7172/1/session?uid=88889999
+```
+
+### 查房间内所有用户
+
+```
+curl http://test-goim.yy.com:7172/1/room?rid=20
+```
