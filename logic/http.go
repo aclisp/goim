@@ -25,10 +25,11 @@ func InitHTTP() (err error) {
 		httpServeMux.HandleFunc("/1/pushs", Pushs)
 		httpServeMux.HandleFunc("/1/push/all", PushAll)
 		httpServeMux.HandleFunc("/1/push/room", PushRoom)
-		httpServeMux.HandleFunc("/1/server/del", DelServer)
+		//httpServeMux.HandleFunc("/1/server/del", DelServer)
 		httpServeMux.HandleFunc("/1/count", Count)
 		httpServeMux.HandleFunc("/1/session", Session)
 		httpServeMux.HandleFunc("/1/list", List)
+		httpServeMux.HandleFunc("/1/room", Room)
 		log.Info("start http listen:\"%s\"", Conf.HTTPAddrs[i])
 		if network, addr, err = inet.ParseNetwork(Conf.HTTPAddrs[i]); err != nil {
 			log.Error("inet.ParseNetwork() error(%v)", err)
@@ -449,6 +450,30 @@ func Session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	res["session"] = session
+	return
+}
+
+func Room(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Method Not Allowed", 405)
+		return
+	}
+	var (
+		users   map[int64]int32
+		err     error
+		roomId  int64
+		ridStr  = r.URL.Query().Get("rid")
+		res     = map[string]interface{}{"ret": OK}
+	)
+	defer retWrite(w, r, res, time.Now())
+	if roomId, err = strconv.ParseInt(ridStr, 10, 64); err != nil {
+		log.Error("strconv.Atoi(\"%s\") error(%v)", ridStr, err)
+		res["ret"] = InternalErr
+		return
+	}
+	users = UserRoomCountMap[roomId]
+	res["room"] = roomId
+	res["users"] = users
 	return
 }
 

@@ -26,6 +26,7 @@ const (
 	routerServiceAddServer      = "RouterRPC.AddServer"
 	routerServiceGetAllServer   = "RouterRPC.GetAllServer"
 	routerServiceAllRoomCount   = "RouterRPC.AllRoomCount"
+	routerServiceAllUserRoomCount = "RouterRPC.AllUserRoomCount"
 	routerServiceAllServerCount = "RouterRPC.AllServerCount"
 	routerServiceGet            = "RouterRPC.Get"
 	routerServiceMGet           = "RouterRPC.MGet"
@@ -240,6 +241,19 @@ func allRoomCount(client *xrpc.Clients) (counter map[int64]int32, err error) {
 	)
 	if err = client.Call(routerServiceAllRoomCount, &args, &reply); err != nil {
 		log.Error("c.Call(\"%s\", nil) error(%v)", routerServiceAllRoomCount, err)
+	} else {
+		counter = reply.Counter
+	}
+	return
+}
+
+func allUserRoomCount(client *xrpc.Clients) (counter map[int64]map[int64]int32, err error) {
+	var (
+		args  = proto.NoArg{}
+		reply = proto.AllUserRoomCountReply{}
+	)
+	if err = client.Call(routerServiceAllUserRoomCount, &args, &reply); err != nil {
+		log.Error("c.Call(\"%s\", nil) error(%v)", routerServiceAllUserRoomCount, err)
 	} else {
 		counter = reply.Counter
 	}

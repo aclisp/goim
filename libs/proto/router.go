@@ -75,6 +75,10 @@ type AllRoomCountReply struct {
 	Counter map[int64]int32
 }
 
+type AllUserRoomCountReply struct {
+	Counter map[int64]map[int64]int32
+}
+
 type AllServerCountReply struct {
 	Counter map[int32]int32
 }

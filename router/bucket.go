@@ -15,6 +15,7 @@ type Bucket struct {
 	roomCounter       map[int64]int32           // roomid->count
 	serverCounter     map[int32]int32           // server->count
 	userServerCounter map[int32]map[int64]int32 // serverid->userid count
+	userRoomCounter   map[int64]map[int64]int32 // roomid->userid count
 	cleaner           *Cleaner                  // bucket map cleaner
 }
 
@@ -25,6 +26,7 @@ func NewBucket(session, server, cleaner int) *Bucket {
 	b.roomCounter = make(map[int64]int32)
 	b.serverCounter = make(map[int32]int32)
 	b.userServerCounter = make(map[int32]map[int64]int32)
+	b.userRoomCounter = make(map[int64]map[int64]int32)
 	b.cleaner = NewCleaner(cleaner)
 	b.server = server
 	b.session = session
@@ -35,7 +37,8 @@ func NewBucket(session, server, cleaner int) *Bucket {
 // counter incr or decr counter.
 func (b *Bucket) counter(userId int64, server int32, roomId int64, incr bool) {
 	var (
-		sm map[int64]int32
+		sm map[int64]int32 // userid->count
+		rm map[int64]int32 // userid->count
 		v  int32
 		ok bool
 	)
@@ -43,18 +46,28 @@ func (b *Bucket) counter(userId int64, server int32, roomId int64, incr bool) {
 		sm = make(map[int64]int32, b.session)
 		b.userServerCounter[server] = sm
 	}
+	if rm, ok = b.userRoomCounter[roomId]; !ok {
+		rm = make(map[int64]int32, b.session)
+		b.userRoomCounter[roomId] = rm
+	}
 	if incr {
 		sm[userId]++
+		rm[userId]++
 		b.roomCounter[roomId]++
 		b.serverCounter[server]++
 	} else {
 		// WARN:
 		// if decr a userid but key not exists just ignore
 		// this may not happen
-		if v, _ = sm[userId]; v-1 == 0 {
+		if v, _ = sm[userId]; v <= 1 {
 			delete(sm, userId)
 		} else {
 			sm[userId] = v - 1
+		}
+		if v, _ = rm[userId]; v <= 1 {
+			delete(rm, userId)
+		} else {
+			rm[userId] = v - 1
 		}
 		b.roomCounter[roomId]--
 		b.serverCounter[server]--
@@ -67,6 +80,26 @@ func (b *Bucket) counterRoom(userId int64, server int32, oldRoomId, roomId int64
 	}
 	b.roomCounter[oldRoomId]--
 	b.roomCounter[roomId]++
+	var (
+		old map[int64]int32
+		now map[int64]int32
+		v   int32
+		ok  bool
+	)
+	if old, ok = b.userRoomCounter[oldRoomId]; !ok {
+		old = make(map[int64]int32, b.session)
+		b.userRoomCounter[oldRoomId] = old
+	}
+	if now, ok = b.userRoomCounter[roomId]; !ok {
+		now = make(map[int64]int32, b.session)
+		b.userRoomCounter[roomId] = now
+	}
+	if v, _ = old[userId]; v <= 1 {
+		delete(old, userId)
+	} else {
+		old[userId] = v - 1
+	}
+	now[userId]++
 }
 
 // Put put a channel according with user id. update if seqLast is not zero.
@@ -191,6 +224,7 @@ func (b *Bucket) Mov(userId int64, seq int32, oldRoomId int64, roomId int64) (ok
 	return
 }
 
+// DelServer must not be called! It will corrupt the counters when clients re-connect.
 func (b *Bucket) DelServer(server int32) {
 	var (
 		roomCounter       = make(map[int64]int32)
@@ -253,6 +287,28 @@ func (b *Bucket) AllRoomCount() (roomCounter map[int64]int32) {
 		if count > 0 {
 			roomCounter[roomId] = count
 		}
+	}
+	b.bLock.RUnlock()
+	return
+}
+
+func (b *Bucket) AllUserRoomCount() (userRoomCounter map[int64]map[int64]int32) {
+	b.bLock.RLock()
+	userRoomCounter = make(map[int64]map[int64]int32, len(b.userRoomCounter))
+	for roomId, rm := range b.userRoomCounter {
+		if len(rm) == 0 {
+			continue
+		}
+		userCounter := make(map[int64]int32, len(rm))
+		for userId, count := range rm {
+			if count > 0 {
+				userCounter[userId] = count
+			}
+		}
+		if len(userCounter) == 0 {
+			continue
+		}
+		userRoomCounter[roomId] = userCounter
 	}
 	b.bLock.RUnlock()
 	return

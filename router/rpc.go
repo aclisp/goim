@@ -243,6 +243,31 @@ func (r *RouterRPC) AllRoomCount(arg *proto.NoArg, reply *proto.AllRoomCountRepl
 	return nil
 }
 
+func (r *RouterRPC) AllUserRoomCount(arg *proto.NoArg, reply *proto.AllUserRoomCountReply) error {
+	var (
+		bucket        *Bucket
+		roomId        int64
+		userId        int64
+		count         int32
+		users, rm     map[int64]int32
+		ok            bool
+	)
+	counter := make(map[int64]map[int64]int32)
+	for _, bucket = range r.Buckets {
+		for roomId, rm = range bucket.AllUserRoomCount() {
+			if users, ok = counter[roomId]; !ok {
+				users = make(map[int64]int32)
+				counter[roomId] = users
+			}
+			for userId, count = range rm {
+				users[userId] += count
+			}
+		}
+	}
+	reply.Counter = counter
+	return nil
+}
+
 func (r *RouterRPC) AllServerCount(arg *proto.NoArg, reply *proto.AllServerCountReply) error {
 	var (
 		bucket        *Bucket
