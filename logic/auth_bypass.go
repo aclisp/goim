@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/hex"
+	//"encoding/hex"
 	"goim/libs/define"
 	"goim/libs/proto"
 	"strconv"
