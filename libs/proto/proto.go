@@ -87,6 +87,14 @@ body:
 	)
 }
 
+func (p *Proto) Str(debug bool) string {
+	if debug {
+		return p.String()
+	}
+	return fmt.Sprintf("{ver:%d op:%d seq:%d body_len:%d}",
+		p.Ver, p.Operation, p.SeqId, len(p.Body))
+}
+
 func (p *Proto) WriteTo(b *bytes.Writer) {
 	var (
 		buf = b.Peek(RawHeaderSize)

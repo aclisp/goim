@@ -82,6 +82,13 @@ func retPWrite(w http.ResponseWriter, r *http.Request, res map[string]interface{
 	log.Debug("req: \"%s\", post: \"%s\", res:\"%s\", ip:\"%s\", time:\"%fs\"", r.URL.String(), *body, dataStr, r.RemoteAddr, time.Now().Sub(start).Seconds())
 }
 
+func dump(data []byte) string {
+	if Conf.Debug {
+		return "\n" + hex.Dump(data)
+	}
+	return ""
+}
+
 func Push(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Method Not Allowed", 405)
@@ -112,19 +119,19 @@ func Push(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
-		body = fmt.Sprintf("<bytes: len=%d> \n%s",
+		body = fmt.Sprintf("bytes: len=%d%s",
 			len(bodyBytes),
-			hex.Dump(bodyBytes),
+			dump(bodyBytes),
 		)
 	} else {
-		body = fmt.Sprintf("<protobuf bytes: len=%d type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+		body = fmt.Sprintf("protobuf bytes: len=%d type=%d headers=%v desc=%s service=%s method=%s%s",
 			len(bodyBytes),
 			bodyTyped.MessageType,
 			bodyTyped.Headers,
 			bodyTyped.MessageDesc,
 			bodyTyped.ServiceName,
 			bodyTyped.MethodName,
-			hex.Dump(bodyTyped.PushBuffer),
+			dump(bodyTyped.PushBuffer),
 		)
 	}
 	if userId, err = strconv.ParseInt(uidStr, 10, 48); err != nil {
@@ -240,13 +247,13 @@ func Pushs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
-		body = fmt.Sprintf("<bytes: uids=%v len=%d> \n%s",
+		body = fmt.Sprintf("bytes: uids=%v len=%d%s",
 			userIds,
 			len(bodyBytes),
-			hex.Dump(bodyBytes),
+			dump(bodyBytes),
 		)
 	} else {
-		body = fmt.Sprintf("<protobuf bytes: uids=%v len=%d type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+		body = fmt.Sprintf("protobuf bytes: uids=%v len=%d type=%d headers=%v desc=%s service=%s method=%s%s",
 			userIds,
 			len(bodyBytes),
 			bodyTyped.MessageType,
@@ -254,7 +261,7 @@ func Pushs(w http.ResponseWriter, r *http.Request) {
 			bodyTyped.MessageDesc,
 			bodyTyped.ServiceName,
 			bodyTyped.MethodName,
-			hex.Dump(bodyTyped.PushBuffer),
+			dump(bodyTyped.PushBuffer),
 		)
 	}
 	subKeys = genSubKeys(userIds)
@@ -303,19 +310,19 @@ func PushRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
-		body = fmt.Sprintf("<bytes: len=%d> \n%s",
+		body = fmt.Sprintf("bytes: len=%d%s",
 			len(bodyBytes),
-			hex.Dump(bodyBytes),
+			dump(bodyBytes),
 		)
 	} else {
-		body = fmt.Sprintf("<protobuf bytes: len=%d type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+		body = fmt.Sprintf("protobuf bytes: len=%d type=%d headers=%v desc=%s service=%s method=%s%s",
 			len(bodyBytes),
 			bodyTyped.MessageType,
 			bodyTyped.Headers,
 			bodyTyped.MessageDesc,
 			bodyTyped.ServiceName,
 			bodyTyped.MethodName,
-			hex.Dump(bodyTyped.PushBuffer),
+			dump(bodyTyped.PushBuffer),
 		)
 	}
 	ridStr := param.Get("rid")
@@ -364,19 +371,19 @@ func PushAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = pb.Unmarshal(bodyBytes, &bodyTyped); err != nil {
-		body = fmt.Sprintf("<bytes: len=%d> \n%s",
+		body = fmt.Sprintf("bytes: len=%d%s",
 			len(bodyBytes),
-			hex.Dump(bodyBytes),
+			dump(bodyBytes),
 		)
 	} else {
-		body = fmt.Sprintf("<protobuf bytes: len=%d type=%d headers=%v desc=%s service=%s method=%s> \n%s",
+		body = fmt.Sprintf("protobuf bytes: len=%d type=%d headers=%v desc=%s service=%s method=%s%s",
 			len(bodyBytes),
 			bodyTyped.MessageType,
 			bodyTyped.Headers,
 			bodyTyped.MessageDesc,
 			bodyTyped.ServiceName,
 			bodyTyped.MethodName,
-			hex.Dump(bodyTyped.PushBuffer),
+			dump(bodyTyped.PushBuffer),
 		)
 	}
 	// push all

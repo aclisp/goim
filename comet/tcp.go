@@ -154,7 +154,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 		if err = p.ReadTCP(rr); err != nil {
 			break
 		}
-		log.Debug("%p key: %s Rx tcp serve %+v", conn, key, p)
+		log.Debug("%p key: %s Rx tcp serve %+v", conn, key, p.Str(Debug))
 		if white {
 			DefaultWhitelist.Log.Info("key: %s Rx %+v", key, p)
 		}
@@ -269,7 +269,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 			DefaultWhitelist.Log.Info("key: %s proto ready", key)
 		}
 		if Debug {
-			log.Debug("%p key: %s dispatch msg: {ver:%d op:%d seq:%d body_len:%d}", conn, key, p.Ver, p.Operation, p.SeqId, len(p.Body))
+			log.Debug("%p key: %s dispatch msg: %s", conn, key, p.Str(false))
 		}
 		switch p {
 		case proto.ProtoFinish:
@@ -294,7 +294,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 				if err = p.WriteTCP(wr); err != nil {
 					goto failed
 				}
-				log.Debug("%p key: %s Tx tcp dispatch %+v", conn, key, p)
+				log.Debug("%p key: %s Tx tcp dispatch %+v", conn, key, p.Str(Debug))
 				if white {
 					DefaultWhitelist.Log.Info("key: %s Tx %+v", key, p)
 				}
@@ -309,7 +309,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 			if err = p.WriteTCP(wr); err != nil {
 				goto failed
 			}
-			log.Debug("%p key: %s Tx tcp dispatch %+v", conn, key, p)
+			log.Debug("%p key: %s Tx tcp dispatch %+v", conn, key, p.Str(Debug))
 			if white {
 				DefaultWhitelist.Log.Info("key: %s Tx %+v", key, p)
 			}
@@ -354,13 +354,13 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 		if err = p.ReadTCP(rr); err != nil {
 			return
 		}
-		log.Debug("%p Rx tcp auth %+v", conn, p)
+		log.Debug("%p Rx tcp auth %+v", conn, p.Str(Debug))
 		if p.Operation == define.OP_HEARTBEAT {
 			p.Body = nil
 			p.Operation = define.OP_HEARTBEAT_REPLY
 			p.WriteTCP(wr)
 			wr.Flush()
-			log.Debug("%p Tx tcp auth %+v", conn, p)
+			log.Debug("%p Tx tcp auth %+v", conn, p.Str(Debug))
 			continue
 		}
 		if p.Operation != define.OP_AUTH {
@@ -399,7 +399,7 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 		p.Body, _ = tag.Encode(output)
 		p.WriteTCP(wr)
 		wr.Flush()
-		log.Debug("%p Tx tcp auth %+v", conn, p)
+		log.Debug("%p Tx tcp auth %+v", conn, p.Str(Debug))
 		p.Body = nil
 		return
 	}
@@ -415,7 +415,7 @@ func (server *Server) authTCP(rr *bufio.Reader, wr *bufio.Writer, p *proto.Proto
 		return
 	}
 	err = wr.Flush()
-	log.Debug("%p key: %s Tx tcp auth %+v", conn, key, p)
+	log.Debug("%p key: %s Tx tcp auth %+v", conn, key, p.Str(Debug))
 	p.Body = nil
 	return
 }

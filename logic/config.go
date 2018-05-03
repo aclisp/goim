@@ -39,6 +39,7 @@ type Config struct {
 	PidFile          string        `goconf:"base:pidfile"`
 	Dir              string        `goconf:"base:dir"`
 	Log              string        `goconf:"base:log"`
+	Debug            bool          `goconf:"base:debug"`
 	MaxProc          int           `goconf:"base:maxproc"`
 	PprofAddrs       []string      `goconf:"base:pprof.addrs:,"`
 	RPCAddrs         []string      `goconf:"base:rpc.addrs:,"`
