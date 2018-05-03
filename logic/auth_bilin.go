@@ -26,7 +26,7 @@ func NewBilinAuther() Auther {
 }
 
 func (a *BilinAuther) Auth(body []byte) (userId int64, roomId int64, err error) {
-	log.Debug("auth enter. body is \n%s", hex.Dump(body))
+	//log.Debug("auth enter. body is \n%s", hex.Dump(body))
 	var appId int64 = 0
 	userId = 0
 	roomId = define.NoRoom
