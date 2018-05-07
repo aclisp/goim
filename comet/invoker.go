@@ -12,6 +12,7 @@ import (
 	log "github.com/aclisp/log4go"
 	pb "github.com/golang/protobuf/proto"
 	"goim/libs/proto"
+	"goim/libs/define"
 )
 
 // setup yytars communicator
@@ -51,6 +52,12 @@ func invoke(comm *servant.Communicator, input proto.RPCInput) (output proto.RPCO
 		rpcResp *taf.ResponsePacket
 		ctx     context.Context
 	)
+	if uid, ok := input.Opt[define.UID]; ok && uid != "0" {
+		input.Opt[servant.CONTEXTCONSISTHASHKEY] = uid
+	}
+	if rid, ok := input.Opt[define.SubscribeRoom]; ok && rid != "-1" {
+		input.Opt[servant.CONTEXTCONSISTHASHKEY] = rid
+	}
 	ctx = servant.NewOutgoingContext(context.TODO(), input.Opt)
 	rpcStub = comm.GetServantProxy(input.Obj)
 	rpcResp, err = rpcStub.Taf_invoke(ctx, 0, input.Func, input.Req)
