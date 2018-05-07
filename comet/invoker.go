@@ -6,6 +6,7 @@ import (
 	//"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"code.yy.com/yytars/goframework/jce/taf"
 	"code.yy.com/yytars/goframework/tars/servant"
@@ -56,7 +57,9 @@ func invoke(comm *servant.Communicator, input proto.RPCInput) (output proto.RPCO
 		input.Opt[servant.CONTEXTCONSISTHASHKEY] = uid
 	}
 	if rid, ok := input.Opt[define.SubscribeRoom]; ok && rid != "-1" {
-		input.Opt[servant.CONTEXTCONSISTHASHKEY] = rid
+		if ridint, err := strconv.ParseInt(rid, 10, 48); err != nil && ridint >=0 && ridint < 1000000000 {
+			input.Opt[servant.CONTEXTCONSISTHASHKEY] = rid
+		}
 	}
 	ctx = servant.NewOutgoingContext(context.TODO(), input.Opt)
 	rpcStub = comm.GetServantProxy(input.Obj)

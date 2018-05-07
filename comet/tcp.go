@@ -192,16 +192,18 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 				msg = fmt.Sprintf("change roomid %d->%d ok", orid, rid)
 				tr.Set(trd, hb)
 				server.operator.ChangeRoom(key, orid, rid)
-				// update conn opt once change roomid ok
-				opt[define.AppID] = strconv.FormatInt(appid, 10)
-				opt[define.SubscribeRoom] = strconv.FormatInt(int64(int32(rid&0xFFFFFFFFFFFF)), 10)
 			}
-			if len(input.Obj) > 0 {
+			if ret == 0 && len(input.Obj) > 0 {
 				output, err = server.operator.Direct(input, TCPConn, opt)
 				if err != nil {
 					ret = 3
 					msg = err.Error()
 				}
+			}
+			if ret == 0 || ret == 3 {
+				// update conn opt once change roomid ok
+				opt[define.AppID] = strconv.FormatInt(appid, 10)
+				opt[define.SubscribeRoom] = strconv.FormatInt(int64(int32(rid&0xFFFFFFFFFFFF)), 10)
 			}
 			output.Ret = int32(ret)
 			output.Desc = msg
