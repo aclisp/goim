@@ -149,7 +149,7 @@ func (s *Session) Count() int {
 
 func (s *Session) Dead(now uint32) (seqs []int32, rooms []int64) {
 	for seq, comet := range s.servers {
-		if now - comet.heartbeat > 6 * 60 {
+		if now - comet.heartbeat > 10 * 60 {  // Mars MaxHeartInterval is 9 minute 50 seconds
 			var room int64 = define.NoRoom
 			for r, servers := range s.rooms {
 				if _, ok := servers[seq]; ok {

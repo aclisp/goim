@@ -181,6 +181,7 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 				ret = 0
 				msg = fmt.Sprintf("change roomid %d->%d ok", orid, rid)
 				tr.Set(trd, hb)
+				server.operator.Update(key, orid)
 				server.operator.ChangeRoom(key, orid, rid)
 			}
 			p.Body = []byte(fmt.Sprintf(`{"ret":%d,"msg":%q}`, ret, msg))

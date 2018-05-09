@@ -191,6 +191,7 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 				ret = 0
 				msg = fmt.Sprintf("change roomid %d->%d ok", orid, rid)
 				tr.Set(trd, hb)
+				server.operator.Update(key, orid)
 				server.operator.ChangeRoom(key, orid, rid)
 			}
 			if ret == 0 && len(input.Obj) > 0 {
