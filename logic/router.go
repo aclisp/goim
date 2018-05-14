@@ -123,11 +123,7 @@ func update(userID int64, seq int32, server int32, roomId int64) (err error) {
 	if client, err = getRouterByUID(userID); err != nil {
 		return
 	}
-	if err = client.Call(routerServicePut, &args, &reply); err != nil {
-		log.Error("c.Call(\"%s\",\"%v\") error(%v)", routerServicePut, args, err)
-	} else {
-		seq = reply.Seq
-	}
+	err = client.Call(routerServicePut, &args, &reply)
 	return
 }
 
@@ -157,7 +153,7 @@ func allServerInfo() (r *proto.GetAllServerReply, err error) {
 	return
 }
 
-func changeRoom(userId int64, seq int32, oldRoomId, roomId int64) (has bool, err error) {
+func changeRoom(userId int64, seq int32, server int32, oldRoomId, roomId int64) (has bool, err error) {
 	var (
 		args = proto.MovArg{UserId: userId, Seq: seq, OldRoomId: oldRoomId, RoomId: roomId}
 		reply = proto.MovReply{}
@@ -166,6 +162,12 @@ func changeRoom(userId int64, seq int32, oldRoomId, roomId int64) (has bool, err
 	if client, err = getRouterByUID(userId); err != nil {
 		return
 	}
+
+	// Call heartbeat update here, to reduce the long comet backhaul delay.
+	client.Call(routerServicePut,
+		&proto.PutArg{UserId: userId, Server: server, RoomId: oldRoomId, Seq: seq},
+		&proto.PutReply{})
+
 	if err = client.Call(routerServiceMov, &args, &reply); err != nil {
 		log.Error("c.Call(\"%s\",\"%v\") error(%v)", routerServiceMov, args, err)
 	} else {

@@ -132,7 +132,7 @@ func (r *RPC) ChangeRoom(arg *proto.ChangeRoomArg, reply *proto.ChangeRoomReply)
 		log.Error("decode(\"%s\") error(%s)", arg.Key, err)
 		return
 	}
-	reply.Has, err = changeRoom(uid, seq, arg.OldRoomId, arg.RoomId)
+	reply.Has, err = changeRoom(uid, seq, arg.Server, arg.OldRoomId, arg.RoomId)
 	return
 }
 

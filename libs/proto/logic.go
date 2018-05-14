@@ -20,6 +20,7 @@ type DisconnReply struct {
 }
 
 type ChangeRoomArg struct {
+	Server    int32
 	Key       string
 	OldRoomId int64
 	RoomId    int64

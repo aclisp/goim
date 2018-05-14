@@ -105,7 +105,7 @@ func disconnect(key string, roomId int64) (has bool, err error) {
 
 func changeRoom(key string, orid int64, rid int64) (has bool, err error) {
 	var (
-		arg    = proto.ChangeRoomArg{Key: key, OldRoomId: orid, RoomId: rid}
+		arg    = proto.ChangeRoomArg{Key: key, OldRoomId: orid, RoomId: rid, Server: Conf.ServerId}
 		reply  = proto.ChangeRoomReply{}
 		client *xrpc.Clients
 	)

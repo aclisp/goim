@@ -20,30 +20,19 @@ import (
 // servant package init will be called first!
 //     It should read tars config file during init.
 /* NEED THIS PATCH
+diff --git a/tars/servant/Application.go b/tars/servant/Application.go
+index d48b961..57275e7 100644
 --- a/tars/servant/Application.go
 +++ b/tars/servant/Application.go
-@@ -1,7 +1,7 @@
-package servant
+@@ -17,7 +17,7 @@ import (
 
-import (
--       "flag"
-+       //"flag"
-	"code.yy.com/yytars/goframework/kissgo/appzaplog/zap"
-	"net/http"
-	"os"
-@@ -26,9 +26,9 @@ var (
-)
+ const (
+        // Turn this off if you do not want the framework calls flag.Parse() during init.
+-       useflag = true
++       useflag = false
+ )
 
-func initConfig() {
--       _configFile := (flag.String("config", "", "init config path"))
--       flag.Parse()
--       configFile = *_configFile
-+       //_configFile := (flag.String("config", "", "init config path"))
-+       //flag.Parse()
-+       configFile = "tars-config.conf"
-	if len(configFile) == 0 {
-			appzaplog.SetLogLevel("info")
-			return
+ var (
 */
 var comm = servant.NewPbCommunicator()
 
@@ -104,8 +93,6 @@ func (ws WebsocketToRPC) Decode(body json.RawMessage) (input proto.RPCInput, err
 		log.Error("decode proto.body is not a valid json: %v", err)
 		return
 	}
-	log.Debug("decode rpc.obj = %s", input.Obj)
-	log.Debug("decode rpc.func = %s", input.Func)
 	if len(input.Req) < 2 {
 		err = fmt.Errorf("decode rpc.req is not a json string: %s", input.Req)
 		log.Error("%v", err)
@@ -118,7 +105,7 @@ func (ws WebsocketToRPC) Decode(body json.RawMessage) (input proto.RPCInput, err
 		return
 	}
 	//log.Debug("decode rpc.req = \n%s", hex.Dump(input.Req))
-	log.Debug("decode rpc.opt = %v", input.Opt)
+	log.Debug("decode rpc.obj = %s , rpc.func = %s , rpc.opt = %v", input.Obj, input.Func, input.Opt)
 	return
 }
 
@@ -127,10 +114,8 @@ func (ws WebsocketToRPC) Invoke(input proto.RPCInput) (output proto.RPCOutput, e
 }
 
 func (ws WebsocketToRPC) Encode(output proto.RPCOutput) (body json.RawMessage, err error) {
-	log.Debug("encode rpc.ret = %d", output.Ret)
+	log.Debug("encode rpc.obj = %s , rpc.func = %s , rpc.ret = %d , rpc.desc = %s , rpc.opt = %v", output.Obj, output.Func, output.Ret, output.Desc, output.Opt)
 	//log.Debug("encode rpc.rsp = \n%s", hex.Dump(output.Rsp))
-	log.Debug("encode rpc.opt = %v", output.Opt)
-	log.Debug("encode rpc.desc = %s", output.Desc)
 	output.Rsp = []byte(`"` + base64.StdEncoding.EncodeToString(output.Rsp) + `"`)
 	if body, err = json.Marshal(output); err != nil {
 		log.Error("can not encode rpc output to json: %v", err)
@@ -154,10 +139,8 @@ func (t TCPToRPC) Decode(body json.RawMessage) (input proto.RPCInput, err error)
 		log.Error("decode proto.body is not a valid protobuf: %v", err)
 		return
 	}
-	log.Debug("decode rpc.obj = %s", input.Obj)
-	log.Debug("decode rpc.func = %s", input.Func)
 	//log.Debug("decode rpc.req = \n%s", hex.Dump(input.Req))
-	log.Debug("decode rpc.opt = %v", input.Opt)
+	log.Debug("decode rpc.obj = %s , rpc.func = %s , rpc.opt = %v", input.Obj, input.Func, input.Opt)
 	return
 }
 
@@ -166,10 +149,8 @@ func (t TCPToRPC) Invoke(input proto.RPCInput) (output proto.RPCOutput, err erro
 }
 
 func (t TCPToRPC) Encode(output proto.RPCOutput) (body json.RawMessage, err error) {
-	log.Debug("encode rpc.ret = %d", output.Ret)
+	log.Debug("encode rpc.obj = %s , rpc.func = %s , rpc.ret = %d , rpc.desc = %s , rpc.opt = %v", output.Obj, output.Func, output.Ret, output.Desc, output.Opt)
 	//log.Debug("encode rpc.rsp = \n%s", hex.Dump(output.Rsp))
-	log.Debug("encode rpc.opt = %v", output.Opt)
-	log.Debug("encode rpc.desc = %s", output.Desc)
 	if body, err = pb.Marshal(&output); err != nil {
 		log.Error("can not encode rpc output to protobuf: %v", err)
 		return
