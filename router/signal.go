@@ -14,7 +14,7 @@ func InitSignal() {
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGSTOP)
 	for {
 		s := <-c
-		log.Info("router[%s] get a signal %s", VERSION, s.String())
+		log.Info("router[%s] get a signal %s", Ver, s.String())
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGSTOP, syscall.SIGINT:
 			return

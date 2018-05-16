@@ -14,7 +14,7 @@ func InitSignal() {
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGSTOP)
 	for {
 		s := <-c
-		log.Info("comet[%s] get a signal %s", Ver, s.String())
+		log.Info("logic[%s] get a signal %s", Ver, s.String())
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGSTOP, syscall.SIGINT:
 			return
