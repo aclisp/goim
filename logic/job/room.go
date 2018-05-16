@@ -43,7 +43,7 @@ func (b *RoomBucket) Get(roomId int64) (r *Room) {
 		room = NewRoom(roomId, b.round.Timer(b.roomNum), b.options)
 		b.rooms[roomId] = room
 		b.roomNum++
-		log.Debug("new roomId:%d num:%d", roomId, b.roomNum)
+		log.Debug("new room:%d, num:%d", roomId, b.roomNum)
 	}
 	b.rwLock.Unlock()
 	return room
@@ -53,6 +53,13 @@ func (b *RoomBucket) Del(roomId int64) {
 	b.rwLock.Lock()
 	delete(b.rooms, roomId)
 	b.rwLock.Unlock()
+}
+
+func (b *RoomBucket) Size() int {
+	b.rwLock.RLock()
+	n := len(b.rooms)
+	b.rwLock.RUnlock()
+	return n
 }
 
 type RoomOptions struct {
@@ -104,7 +111,7 @@ func (r *Room) pushproc(timer *itime.Timer, batch int, sigTime time.Duration) {
 		td  *itime.TimerData
 		buf = bytes.NewWriterSize(int(proto.MaxBodySize))
 	)
-	log.Debug("start room: %d goroutine", r.id)
+	log.Debug("start room:%d goroutine, total:%d", r.id, roomBucket.Size())
 	td = timer.Add(roomIdle, func() {
 		select {
 		case r.proto <- roomReadyProto:
@@ -124,6 +131,13 @@ func (r *Room) pushproc(timer *itime.Timer, batch int, sigTime time.Duration) {
 			}
 		} else if n == 0 {
 			// idle
+			// before quit, check again if there is another push
+			select {
+			case p = <-r.proto:
+				r.proto <- p
+				continue
+			default:
+			}
 			break
 		}
 		broadcastRoomBytes(r.id, buf.Buffer())
@@ -135,5 +149,5 @@ func (r *Room) pushproc(timer *itime.Timer, batch int, sigTime time.Duration) {
 	}
 	timer.Del(td)
 	roomBucket.Del(r.id)
-	log.Debug("end room: %d goroutine exit", r.id)
+	log.Debug("end room:%d goroutine exit, total:%d", r.id, roomBucket.Size())
 }
