@@ -42,7 +42,9 @@ func (b *RoomBucket) Get(roomId int64) (r *Room) {
 	if !ok {
 		room = NewRoom(roomId, b.round.Timer(b.roomNum), b.options)
 		b.rooms[roomId] = room
-		b.roomNum++
+		if b.roomNum++; b.roomNum < 0 {
+			b.roomNum = 0
+		}
 		log.Debug("new room:%d, num:%d", roomId, b.roomNum)
 	}
 	b.rwLock.Unlock()
@@ -147,7 +149,7 @@ func (r *Room) pushproc(timer *itime.Timer, batch int, sigTime time.Duration) {
 		// after push to room channel, renew a buffer, let old buffer gc
 		buf = bytes.NewWriterSize(buf.Size())
 	}
+	roomBucket.Del(r.id) // lock roomBucket immediately
 	timer.Del(td)
-	roomBucket.Del(r.id)
 	log.Debug("end room:%d goroutine exit, total:%d", r.id, roomBucket.Size())
 }

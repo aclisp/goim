@@ -8,8 +8,6 @@ import (
 )
 
 var (
-	maxInt        = 1<<31 - 1
-	emptyJSONBody = []byte("{}")
 	okJSONBody = []byte(`{"ret":0}`)
 )
 

@@ -78,7 +78,7 @@ func acceptTCP(server *Server, lis *net.TCPListener) {
 			return
 		}
 		go serveTCP(server, conn, r)
-		if r++; r == maxInt {
+		if r++; r < 0 {
 			r = 0
 		}
 	}

@@ -63,7 +63,7 @@ func acceptFlashPolicy(server *Server, lis *net.TCPListener) {
 			return
 		}
 		go serveFlashPolicy(server, conn, r)
-		if r++; r == maxInt {
+		if r++; r < 0 {
 			r = 0
 		}
 	}

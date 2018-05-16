@@ -27,7 +27,9 @@ func NewSession(server int) *Session {
 }
 
 func (s *Session) nextSeq() int32 {
-	s.seq++
+	if s.seq++; s.seq < 0 {
+		s.seq = 0
+	}
 	return s.seq
 }
 

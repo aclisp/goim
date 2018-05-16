@@ -9,10 +9,6 @@ import (
 	log "github.com/aclisp/log4go"
 )
 
-const (
-	VERSION = "0.1"
-)
-
 func main() {
 	flag.Parse()
 	if err := InitConfig(); err != nil {
@@ -21,7 +17,7 @@ func main() {
 	runtime.GOMAXPROCS(Conf.MaxProc)
 	log.LoadConfiguration(Conf.Log)
 	defer log.Close()
-	log.Info("router[%s] start", VERSION)
+	log.Info("router[%s] start", Ver)
 	// start prof
 	perf.Init(Conf.PprofAddrs)
 	// start monitor
