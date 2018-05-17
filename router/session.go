@@ -28,7 +28,7 @@ func NewSession(server int) *Session {
 
 func (s *Session) nextSeq() int32 {
 	if s.seq++; s.seq < 0 {
-		s.seq = 0
+		s.seq = 1  // starts from 1 to differentiate from seqLast
 	}
 	return s.seq
 }
