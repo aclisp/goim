@@ -2,9 +2,9 @@ package main
 
 import (
 	"goim/libs/define"
+	"goim/libs/proto"
 	"sync"
 	"time"
-	"goim/libs/proto"
 )
 
 type Bucket struct {
@@ -158,12 +158,12 @@ func (b *Bucket) Tidy() {
 	}
 	var deadList []deadSession
 	b.bLock.RLock()
-	for userId, s:= range b.sessions {
+	for userId, s := range b.sessions {
 		seqs, rooms := s.Dead(now)
 		deadList = append(deadList, deadSession{
 			userId: userId,
-			seqs: seqs,
-			rooms: rooms,
+			seqs:   seqs,
+			rooms:  rooms,
 		})
 	}
 	b.bLock.RUnlock()
@@ -338,10 +338,10 @@ func (b *Bucket) UserSession(userId int64) (us *proto.UserSession) {
 	b.bLock.RLock()
 	if s, ok := b.sessions[userId]; ok {
 		servers := make(map[int32]struct {
-			Comet int32
-			Birth string
+			Comet     int32
+			Birth     string
 			Heartbeat string
-		})
+		}, len(s.servers))
 		for seq, comet := range s.servers {
 			v := servers[seq]
 			v.Comet = comet.id
@@ -349,12 +349,20 @@ func (b *Bucket) UserSession(userId int64) (us *proto.UserSession) {
 			v.Heartbeat = time.Unix(int64(comet.heartbeat), 0).Format(time.Stamp)
 			servers[seq] = v
 		}
+		rooms := make(map[int64]map[int32]int32, len(s.rooms))
+		for roomid, m := range s.rooms {
+			v := make(map[int32]int32, len(m))
+			for seq, server := range m {
+				v[seq] = server
+			}
+			rooms[roomid] = v
+		}
 		us = &proto.UserSession{
 			UserId:  userId,
 			Count:   int32(s.Count()),
 			Seq:     s.seq,
 			Servers: servers,
-			Rooms:   s.rooms,
+			Rooms:   rooms,
 		}
 	}
 	b.bLock.RUnlock()
