@@ -127,12 +127,12 @@ func (r *RouterRPC) AddServer(arg *proto.RegisterArg, reply *proto.NoReply) erro
 }
 
 func (r *RouterRPC) GetAllServer(arg *proto.NoArg, reply *proto.GetAllServerReply) error {
+	r.serversL.RLock()
 	servers := make(map[int32]struct {
 		Info      string
 		Birth     string
 		Heartbeat string
-	})
-	r.serversL.RLock()
+	}, len(r.servers))
 	for i, s := range r.servers {
 		v := servers[i]
 		v.Info = s.info
