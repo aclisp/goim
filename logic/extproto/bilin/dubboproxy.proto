@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+option go_package = "bilin";
+option java_package = "com.yy.bilin.tars.dubboproxy";
+option java_outer_classname = "Proto";
+package bilin.tars.dubboproxy;
+
+message DPInvokeReq {
+    string service = 1;
+    string method = 2;
+    repeated DPInvokeArg args = 3;
+}
+
+message DPInvokeArg {
+    string type = 1;
+    string value = 2;
+}
+
+message DPInvokeRsp {
+    string type = 1;
+    string value = 2;
+    bool threw_exception = 3;
+}
+
+service DubboProxy {
+    rpc Invoke(DPInvokeReq) returns (DPInvokeRsp);
+}

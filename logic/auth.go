@@ -11,6 +11,7 @@ type AutherBuilder func() Auther
 var AutherRegistry = map[string]AutherBuilder{
 	"bypass":  NewBypassAuther,
 	"bilin":   NewBilinAuther,
+	"bilinx":  NewBilinAutherEx,
 	"udbyy":   NewUdbYyAuther,
 	"udbintl": NewUdbIntlAuther,
 }

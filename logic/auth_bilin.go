@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
@@ -8,8 +9,11 @@ import (
 	"fmt"
 	"goim/libs/define"
 	"goim/libs/proto"
+	"goim/logic/extproto/bilin"
 	"strconv"
+	"strings"
 
+	"code.yy.com/yytars/goframework/tars/servant"
 	log "github.com/aclisp/log4go"
 	pb "github.com/golang/protobuf/proto"
 )
@@ -19,10 +23,22 @@ const (
 )
 
 type BilinAuther struct {
+	comm   *servant.Communicator
+	client bilin.DubboProxyClient
 }
 
 func NewBilinAuther() Auther {
 	return &BilinAuther{}
+}
+
+func NewBilinAutherEx() Auther {
+	var comm = servant.NewPbCommunicator()
+	var obj = "bilin.dubboproxy.LongLinkAuthProxy"
+	var client = bilin.NewDubboProxyClient(obj, comm)
+	return &BilinAuther{
+		comm:   comm,
+		client: client,
+	}
 }
 
 func (a *BilinAuther) Auth(body []byte) (userId int64, roomId int64, err error) {
@@ -74,6 +90,28 @@ func (a *BilinAuther) Auth(body []byte) (userId int64, roomId int64, err error) 
 }
 
 func (a *BilinAuther) verify(token string, userid string, timestamp string) (err error) {
+	items := strings.Split(token, ",")
+	if len(items) > 1 && a.comm != nil {
+		var ok bool
+		accesstoken := items[1]
+		token = items[0]
+		if ok, err = a.verifyRemotely(accesstoken, userid); err != nil {
+			goto Locally
+		} else if !ok {
+			err = fmt.Errorf("invalid token for uid %s", userid)
+			return
+		} else {
+			return
+		}
+	}
+	if len(items) > 0 {
+		token = items[0]
+	}
+Locally:
+	return a.verifyLocally(token, userid, timestamp)
+}
+
+func (a *BilinAuther) verifyLocally(token string, userid string, timestamp string) (err error) {
 	mac := hmac.New(sha1.New, []byte(Conf.AuthKey))
 	mac.Write([]byte(userid + timestamp))
 	expected := mac.Sum(nil)
@@ -82,5 +120,40 @@ func (a *BilinAuther) verify(token string, userid string, timestamp string) (err
 		return
 	}
 	err = fmt.Errorf("invalid token for uid %s", userid)
+	return
+}
+
+func (a *BilinAuther) verifyRemotely(accesstoken string, userid string) (ok bool, err error) {
+	rsp, err := a.client.Invoke(context.Background(), &bilin.DPInvokeReq{
+		Service: "com.bilin.user.account.service.IUserLoginService",
+		Method:  "verifyUserAccessToken",
+		Args: []*bilin.DPInvokeArg{
+			{
+				Type:  "long",
+				Value: userid,
+			},
+			{
+				Type:  "java.lang.String",
+				Value: accesstoken,
+			},
+		},
+	})
+	if err != nil {
+		err = fmt.Errorf("error calling dubbo proxy: %v", err)
+		log.Error("%v", err)
+		return
+	}
+	if rsp.ThrewException {
+		err = fmt.Errorf("error invoking dubbo service: %v", rsp.Type)
+		log.Error("%v, %v", err, rsp.Value)
+		return
+	}
+	if rsp.Type == "java.lang.Boolean" && rsp.Value == "true" {
+		// success
+		ok = true
+	} else {
+		log.Error("fail to verify access token %q, with user id %q, got %v: %v", accesstoken, userid, rsp.Type, rsp.Value)
+		return
+	}
 	return
 }
