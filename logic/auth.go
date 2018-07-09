@@ -46,3 +46,7 @@ func authWithString(token string) (userId int64, roomId int64, err error) {
 	roomId = (appId << 48) | roomId
 	return
 }
+
+func authBlocked(token, userid string) bool {
+	return Conf.AuthBlock[userid] == token
+}

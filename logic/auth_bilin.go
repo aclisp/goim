@@ -90,6 +90,10 @@ func (a *BilinAuther) Auth(body []byte) (userId int64, roomId int64, err error) 
 }
 
 func (a *BilinAuther) verify(token string, userid string, timestamp string) (err error) {
+	if authBlocked(token, userid) {
+		err = fmt.Errorf("token is blocked for uid %s: %s", userid, token)
+		return
+	}
 	items := strings.Split(token, ",")
 	if len(items) > 1 && a.comm != nil {
 		var ok bool
