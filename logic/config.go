@@ -59,7 +59,7 @@ type Config struct {
 	// auth
 	AuthMode string `goconf:"auth:mode"`
 	AuthKey  string `goconf:"auth:key"`
-	AuthBlock map[string]string `goconf:"auth:block:|"` // uid->token
+	AuthBlock []string `goconf:"auth:block:|"` // blocked tokens
 }
 
 func NewConfig() *Config {
@@ -74,7 +74,6 @@ func NewConfig() *Config {
 		RouterRPCAddrs: make(map[string]string),
 		AuthMode:       "bypass",
 		AuthKey:        "test",
-		AuthBlock:      make(map[string]string),
 	}
 }
 
