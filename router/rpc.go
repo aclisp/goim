@@ -88,19 +88,6 @@ func (r *RouterRPC) Mov(arg *proto.MovArg, reply *proto.MovReply) error {
 	return nil
 }
 
-func (r *RouterRPC) DelServer(arg *proto.DelServerArg, reply *proto.NoReply) error {
-	var (
-		bucket *Bucket
-	)
-	for _, bucket = range r.Buckets {
-		bucket.DelServer(arg.Server)
-	}
-	r.serversL.Lock()
-	delete(r.servers, arg.Server)
-	r.serversL.Unlock()
-	return nil
-}
-
 func (r *RouterRPC) AddServer(arg *proto.RegisterArg, reply *proto.NoReply) error {
 	var (
 		v  serverInfo

@@ -61,31 +61,49 @@ func (b *Bucket) counter(userId int64, server int32, roomId int64, incr bool) {
 		// this may not happen
 		if v, _ = sm[userId]; v <= 1 {
 			delete(sm, userId)
+			if len(sm) == 0 {
+				delete(b.userServerCounter, server)
+			}
 		} else {
 			sm[userId] = v - 1
 		}
 		if v, _ = rm[userId]; v <= 1 {
 			delete(rm, userId)
+			if len(rm) == 0 {
+				delete(b.userRoomCounter, roomId)
+			}
 		} else {
 			rm[userId] = v - 1
 		}
-		b.roomCounter[roomId]--
-		b.serverCounter[server]--
+		if v, _ = b.roomCounter[roomId]; v <= 1 {
+			delete(b.roomCounter, roomId)
+		} else {
+			b.roomCounter[roomId] = v - 1
+		}
+		if v, _ = b.serverCounter[server]; v <= 1 {
+			delete(b.serverCounter, server)
+		} else {
+			b.serverCounter[server] = v - 1
+		}
 	}
 }
 
 func (b *Bucket) counterRoom(userId int64, server int32, oldRoomId, roomId int64) {
-	if oldRoomId == roomId {
-		return
-	}
-	b.roomCounter[oldRoomId]--
-	b.roomCounter[roomId]++
 	var (
 		old map[int64]int32
 		now map[int64]int32
 		v   int32
 		ok  bool
 	)
+	if oldRoomId == roomId {
+		return
+	}
+	if v, _ = b.roomCounter[oldRoomId]; v <= 1 {
+		delete(b.roomCounter, oldRoomId)
+	} else {
+		b.roomCounter[oldRoomId] = v - 1
+	}
+	b.roomCounter[roomId]++
 	if old, ok = b.userRoomCounter[oldRoomId]; !ok {
 		old = make(map[int64]int32, b.session)
 		b.userRoomCounter[oldRoomId] = old
@@ -96,6 +114,9 @@ func (b *Bucket) counterRoom(userId int64, server int32, oldRoomId, roomId int64
 	}
 	if v, _ = old[userId]; v <= 1 {
 		delete(old, userId)
+		if len(old) == 0 {
+			delete(b.userRoomCounter, oldRoomId)
+		}
 	} else {
 		old[userId] = v - 1
 	}
@@ -172,7 +193,6 @@ func (b *Bucket) Tidy() {
 			b.Del(v.userId, v.seqs[i], v.rooms[i])
 		}
 	}
-	// TODO recalculate the counters according to the sessions!
 }
 
 // Del delete the channel by sub key.
@@ -219,43 +239,6 @@ func (b *Bucket) Mov(userId int64, seq int32, oldRoomId int64, roomId int64) (ok
 		if has {
 			b.counterRoom(userId, server, oldRoomId, roomId)
 		}
-	}
-	b.bLock.Unlock()
-	return
-}
-
-// DelServer must not be called! It will corrupt the counters when clients re-connect.
-func (b *Bucket) DelServer(server int32) {
-	var (
-		roomCounter       = make(map[int64]int32)
-		servers           map[int32]int32
-		userServerCounter map[int64]int32
-		roomId            int64
-		count             int32
-		userId            int64
-		s                 *Session
-		ok                bool
-	)
-	b.bLock.Lock()
-	// if server failed, may not accept new connections, just delete map
-	if userServerCounter, ok = b.userServerCounter[server]; ok {
-		delete(b.userServerCounter, server)
-	} else {
-		b.bLock.Unlock()
-		return
-	}
-	delete(b.serverCounter, server)
-	for userId, _ = range userServerCounter {
-		if s, ok = b.sessions[userId]; !ok {
-			continue
-		}
-		for roomId, servers = range s.rooms {
-			roomCounter[roomId] += int32(len(servers))
-		}
-		delete(b.sessions, userId)
-	}
-	for roomId, count = range roomCounter {
-		b.roomCounter[roomId] -= count
 	}
 	b.bLock.Unlock()
 	return
