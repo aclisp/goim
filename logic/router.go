@@ -12,8 +12,10 @@ import (
 )
 
 var (
-	routerServiceMap = map[string]*xrpc.Clients{}
-	routerRing       *ketama.HashRing
+	routerServiceMap    = map[string]*xrpc.Clients{}
+	routerServiceMapIDC = []map[string]*xrpc.Clients{}
+	routerRing          *ketama.HashRing
+	replicateChannel    = make(chan func(), 100)
 )
 
 const (
@@ -34,7 +36,7 @@ const (
 	routerServiceUserSession    = "RouterRPC.UserSession"
 )
 
-func InitRouter(addrs map[string]string) (err error) {
+func InitRouter(addrs map[string]string, addrsIDC []map[string]string) (err error) {
 	var (
 		network, addr string
 	)
@@ -58,9 +60,37 @@ func InitRouter(addrs map[string]string) (err error) {
 		rpcClient.Ping(routerServicePing)
 		routerRing.AddNode(serverId, 1)
 		routerServiceMap[serverId] = rpcClient
-		log.Info("router rpc connect: %v ", rpcOptions)
+		log.Info("router rpc connect (IDC 0): %v %v", serverId, rpcOptions)
 	}
 	routerRing.Bake()
+	// init router addresses in other IDC
+	for idc, addrs := range addrsIDC {
+		routerServiceMap := make(map[string]*xrpc.Clients)
+		for serverId, bind := range addrs {
+			var rpcOptions []xrpc.ClientOptions
+			for _, bind = range strings.Split(bind, ",") {
+				if network, addr, err = inet.ParseNetwork(bind); err != nil {
+					log.Error("inet.ParseNetwork() error(%v)", err)
+					return
+				}
+				options := xrpc.ClientOptions{
+					Proto: network,
+					Addr:  addr,
+				}
+				rpcOptions = append(rpcOptions, options)
+			}
+			rpcClient := xrpc.Dials(rpcOptions)
+			rpcClient.Ping(routerServicePing)
+			routerServiceMap[serverId] = rpcClient
+			log.Info("router rpc connect (IDC %d): %v %v", idc+1, serverId, rpcOptions)
+		}
+		routerServiceMapIDC = append(routerServiceMapIDC, routerServiceMap)
+	}
+	go func() {
+		for task := range replicateChannel {
+			task()
+		}
+	}()
 	return
 }
 
@@ -73,7 +103,7 @@ func getRouterByServer(server string) (*xrpc.Clients, error) {
 }
 
 func getRouterByUID(userID int64) (*xrpc.Clients, error) {
-	return getRouterByServer(routerRing.Hash(strconv.FormatInt(userID, 10)))
+	return getRouterByServer(getRouterNode(userID))
 }
 
 func getRouterNode(userID int64) string {
@@ -93,6 +123,8 @@ func connect(userID int64, server int32, roomId int64) (seq int32, err error) {
 		log.Error("c.Call(\"%s\",\"%v\") error(%v)", routerServicePut, args, err)
 	} else {
 		seq = reply.Seq
+		args.Seq = reply.Seq
+		replicate(userID, routerServicePut, args, reply)
 	}
 	return
 }
@@ -110,6 +142,7 @@ func disconnect(userID int64, seq int32, roomId int64) (has bool, err error) {
 		log.Error("c.Call(\"%s\",\"%v\") error(%v)", routerServiceDel, args, err)
 	} else {
 		has = reply.Has
+		replicate(userID, routerServiceDel, args, reply)
 	}
 	return
 }
@@ -124,6 +157,9 @@ func update(userID int64, seq int32, server int32, roomId int64) (err error) {
 		return
 	}
 	err = client.Call(routerServicePut, &args, &reply)
+	if err == nil {
+		replicate(userID, routerServicePut, args, reply)
+	}
 	return
 }
 
@@ -164,16 +200,41 @@ func changeRoom(userId int64, seq int32, server int32, oldRoomId, roomId int64) 
 	}
 
 	// Call heartbeat update here, to reduce the long comet backhaul delay.
-	client.Call(routerServicePut,
-		&proto.PutArg{UserId: userId, Server: server, RoomId: oldRoomId, Seq: seq},
-		&proto.PutReply{})
+	args1 := proto.PutArg{UserId: userId, Server: server, RoomId: oldRoomId, Seq: seq}
+	reply1 := proto.PutReply{}
+	if err1 := client.Call(routerServicePut, &args1, &reply1); err1 == nil {
+		replicate(userId, routerServicePut, args1, reply1)
+	}
 
 	if err = client.Call(routerServiceMov, &args, &reply); err != nil {
 		log.Error("c.Call(\"%s\",\"%v\") error(%v)", routerServiceMov, args, err)
 	} else {
 		has = reply.Has
+		replicate(userId, routerServiceMov, args, reply)
 	}
 	return
+}
+
+func replicate(userId int64, serviceMethod string, args interface{}, reply interface{}) {
+	if len(routerServiceMapIDC) == 0 {
+		return
+	}
+
+	for _, routerServiceMap := range routerServiceMapIDC {
+		if client, ok := routerServiceMap[getRouterNode(userId)]; ok {
+			task := func() {
+				if err := client.Call(serviceMethod, &args, &reply); err != nil {
+					log.Error("replicate fail(%v) with user id %v on %v: %v", err, userId, serviceMethod, args)
+				}
+			}
+			select {
+			case replicateChannel <- task:
+				// replicate ok
+			default:
+				log.Error("replicate dropped(queue full) with user id %v on %v: %v", userId, serviceMethod, args)
+			}
+		}
+	}
 }
 
 func userSession(userId int64) (us *proto.UserSession, err error) {
@@ -218,20 +279,6 @@ func listUserSession() (nodes []Sessions, err error) {
 			sessions.servers = append(sessions.servers, x.Servers)
 		}
 		nodes = append(nodes, sessions)
-	}
-	return
-}
-
-func delServer(server int32) (err error) {
-	var (
-		args   = proto.DelServerArg{Server: server}
-		reply  = proto.NoReply{}
-		client *xrpc.Clients
-	)
-	for _, client = range routerServiceMap {
-		if err = client.Call(routerServiceDelServer, &args, &reply); err != nil {
-			log.Error("c.Call(\"%s\",\"%v\") error(%v)", routerServiceDelServer, args, err)
-		}
 	}
 	return
 }

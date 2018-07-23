@@ -25,7 +25,6 @@ func InitHTTP() (err error) {
 		httpServeMux.HandleFunc("/1/pushs", Pushs)
 		httpServeMux.HandleFunc("/1/push/all", PushAll)
 		httpServeMux.HandleFunc("/1/push/room", PushRoom)
-		//httpServeMux.HandleFunc("/1/server/del", DelServer)
 		httpServeMux.HandleFunc("/1/count", Count)
 		httpServeMux.HandleFunc("/1/session", Session)
 		httpServeMux.HandleFunc("/1/list", List)
@@ -519,29 +518,5 @@ func List(w http.ResponseWriter, r *http.Request) {
 		data[node.node] = sessions
 	}
 	res["nodes"] = data
-	return
-}
-
-func DelServer(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, "Method Not Allowed", 405)
-		return
-	}
-	var (
-		err       error
-		serverStr = r.URL.Query().Get("server")
-		server    int64
-		res       = map[string]interface{}{"ret": OK}
-	)
-	defer retPWrite(w, r, res, &serverStr, time.Now())
-	if server, err = strconv.ParseInt(serverStr, 10, 32); err != nil {
-		log.Error("strconv.Atoi(\"%s\") error(%v)", serverStr, err)
-		res["ret"] = InternalErr
-		return
-	}
-	if err = delServer(int32(server)); err != nil {
-		res["ret"] = InternalErr
-		return
-	}
 	return
 }

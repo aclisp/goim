@@ -21,7 +21,7 @@ func main() {
 	log.Info("logic[%s] start", Ver)
 	perf.Init(Conf.PprofAddrs)
 	// router rpc
-	if err := InitRouter(Conf.RouterRPCAddrs); err != nil {
+	if err := InitRouter(Conf.RouterRPCAddrs, Conf.RouterRPCAddrsIDC); err != nil {
 		log.Warn("router rpc current can't connect, retry")
 	}
 	// start monitor

@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"runtime"
 	"time"
 
@@ -48,6 +49,8 @@ type Config struct {
 	HTTPWriteTimeout time.Duration `goconf:"base:http.write.timeout:time"`
 	// router RPC
 	RouterRPCAddrs map[string]string `goconf:"-"`
+	// router RPC in other IDCs
+	RouterRPCAddrsIDC []map[string]string `goconf:"-"`
 	// kafka
 	KafkaOpen  bool     `goconf:"kafka:open"`
 	KafkaAddrs []string `goconf:"kafka:addrs"`
@@ -93,6 +96,20 @@ func InitConfig() (err error) {
 			return err
 		}
 		Conf.RouterRPCAddrs[serverID] = addr
+	}
+	for i := 1; i < 10; i++ {
+		sectionName := fmt.Sprintf("router.addrs.%d", i)
+		if section := gconf.Get(sectionName); section != nil {
+			addrs := make(map[string]string)
+			for _, serverID := range section.Keys() {
+				addr, err := section.String(serverID)
+				if err != nil {
+					return err
+				}
+				addrs[serverID] = addr
+			}
+			Conf.RouterRPCAddrsIDC = append(Conf.RouterRPCAddrsIDC, addrs)
+		}
 	}
 	return nil
 }
