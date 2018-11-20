@@ -1,5 +1,28 @@
 # 长连接和广播系统设计文档
 
+## 原始需求
+
+* 支持长连接
+  + 适配客户端的通信协议 [Mars](https://github.com/Tencent/mars/wiki)
+  + 适配客户端的通信协议 WebSocket
+* 支持业务
+  + 适配服务端的通信协议 [Tars](https://github.com/TarsCloud)
+  + 注：一个更好的替代品是 [Micro](https://micro.mu)
+* 支持单播和广播
+  + 即服务器（通过长连接）主动发消息给客户端
+
+### 通用封包的设计要点
+
+  + RPCInput
+  + RPCOutput
+  + ServerPush
+  + MultiPush
+  + 注：参考 [brpc](https://github.com/brpc/brpc/blob/master/docs/cn/baidu_std.md)
+  + 注：ServerPush 的 URI 区分，其最佳实践为 `ServiceName/NotifyType`，与 RPC 的 URI 区分 `ServiceName/MethodName` 对应起来。即 P2P 的每个交易，应该有 `Request/Response/Notify` 三种消息。
+  + 参考 [IM开发干货系列文章](http://www.52im.net/thread-294-1-1.html)
+
+goim 本质上是 IM 系统的基础设施。目标是支持全球多数据中心，百万在线用户，千万日活跃度的互动应用。其典型的应用场景有游戏、直播、社交、小视频等。
+
 ## 架构设计
 
 ### 接入层
@@ -64,3 +87,8 @@ router维护全局在线用户，是一个二级map `user_id -> conn_id -> serve
     * 增加开关，可以不依赖Kafka和Zookeeper
 * goim在B站用于[推送弹幕](https://zhuanlan.zhihu.com/p/22016939)。无法保证[在线实时消息的可靠投递](http://www.52im.net/thread-294-1-1.html)。
 * 一条连接，只能在一个房间里。房间不等于[群聊](http://www.52im.net/thread-753-1-1.html)。
+
+## 高可用分析
+
+goim 是 IM 系统的基础设施，其支撑的上层应用需要为用户提供 7-24 小时无间断服务。迭代式开发，要求 goim 内在模块和业务服务的升级、扩容对用户无感知。
+
