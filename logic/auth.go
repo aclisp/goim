@@ -12,7 +12,7 @@ var AutherRegistry = map[string]AutherBuilder{
 	"bypass":  NewBypassAuther,
 	"bilin":   NewBilinAuther,
 	"bilinx":  NewBilinAutherEx,
-	"udbyy":   NewUdbYyAuther,
+	//"udbyy":   NewUdbYyAuther,
 	"udbintl": NewUdbIntlAuther,
 }
 
