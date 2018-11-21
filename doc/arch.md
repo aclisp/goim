@@ -88,6 +88,37 @@ router维护全局在线用户，是一个二级map `user_id -> conn_id -> serve
 * goim在B站用于[推送弹幕](https://zhuanlan.zhihu.com/p/22016939)。无法保证[在线实时消息的可靠投递](http://www.52im.net/thread-294-1-1.html)。
 * 一条连接，只能在一个房间里。房间不等于[群聊](http://www.52im.net/thread-753-1-1.html)。
 
+## 高性能分析
+
+容量规划：（阿里云主机16C32G-2.5GHz，预留50%余量）
+
+* 10,000 conn per comet
+* 100 comet
+* 50 logic/router/job co-located
+* or 改进：
+  + 10 logic
+  + 5 job
+  + kafka cluster
+  + zookeeper cluster
+  + 10 router
+
+瓶颈 CPU > 带宽 > 内存
+
+内部通信瓶颈：
+
+* 客户端发起的RPC mobile -> comet -> micro 无瓶颈，可水平扩容
+* 上线/下线/切换房间/心跳 mobile -> comet -> logic -> router 无瓶颈，可水平扩容
+* 单播 micro -> logic (-> router) -> job -> comet -> mobile 无瓶颈，可水平扩容
+* 批量单播  micro -> logic ((N-parallel)-> router) -> job -> comet -> mobile 
+  + 限制：一批用户总数，不宜过多
+* 广播 micro -> logic -> job -> comet -> mobile 
+  + 限制：由于job定期absorb comet上的room list, so job数量不可过多
+  + 改进：logic和job解耦，用kafka连接。由于 job 对 CPU 的消耗在 comet/logic/router 中最少，只需要非常少的 job 实例就行。
+* 在线信息查询
+  + 按用户查在线查房间 /session 无瓶颈，可水平扩容
+  + 查在线总数 /count 由于logic定期absorb router上的room users，只能是有限的logic打开counter定时查
+  + 按房间查用户 /room 同 /count
+
 ## 高可用分析
 
 goim 是 IM 系统的基础设施，其支撑的上层应用需要为用户提供 7-24 小时无间断服务。迭代式开发，要求 goim 内在模块和业务服务的升级、扩容对用户无感知。
