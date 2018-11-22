@@ -142,10 +142,10 @@ router维护全局在线用户，是一个二级map `user_id -> conn_id -> serve
 
 goim 是 IM 系统的基础设施，其支撑的上层应用需要为用户提供 7-24 小时无间断服务。迭代式开发，要求 goim 内在模块和业务服务的升级、扩容对用户无感知。
 
-comet 重启、升级时，客户端检测到连接断开，自动重连到另一个 comet 
-logic 重启、升级时，comet、micro 会自动寻找下一个 logic
-job 重启、升级时，有其它 job 继续消费 kafka
-router 重启、升级时，由备 router 顶上；升级完成，切回主 router
+* comet 重启、升级时，客户端检测到连接断开，自动重连到另一个 comet 
+* logic 重启、升级时，comet、micro 会自动寻找下一个 logic
+* job 重启、升级时，有其它 job 继续消费 kafka
+* router 重启、升级时，由备 router 顶上；升级完成，切回主 router
 
 ## 可扩展性分析 
 
