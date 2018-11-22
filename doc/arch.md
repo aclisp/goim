@@ -13,17 +13,24 @@
 
 ### 通用封包的设计要点
 
-  + RPCInput
-  + RPCOutput
-  + ServerPush
-  + MultiPush
+  + RPCInput 客户端上行请求封包
+  + RPCOutput 对应客户端请求的服务器应答封包
+  + ServerPush 服务器主动下发的通知封包
+  + MultiPush 用于服务之前，批量单播封包
   + 注：参考 [brpc](https://github.com/brpc/brpc/blob/master/docs/cn/baidu_std.md)
   + 注：ServerPush 的 URI 区分，其最佳实践为 `ServiceName/NotifyType`，与 RPC 的 URI 区分 `ServiceName/MethodName` 对应起来。即 P2P 的每个交易，应该有 `Request/Response/Notify` 三种消息。
   + 参考 [IM开发干货系列文章](http://www.52im.net/thread-294-1-1.html)
 
-goim 本质上是 IM 系统的基础设施。目标是支持全球多数据中心，百万在线用户，千万日活跃度的互动应用。其典型的应用场景有游戏、直播、社交、小视频等。
+goim 本质上是 IM 系统的基础设施。目标是支持全球多数据中心，百万在线用户，千万日活跃度的互动应用。其典型的应用场景有游戏、直播、即时提醒、实时图表、弹幕、聊天、屏幕同步等。
 
 ## 架构设计
+
+名词解释
+
+* comet 客户端直连的边缘接入进程
+* logic 中心逻辑服务
+* job 中心推送服务
+* router 中心路由存储服务
 
 ### 接入层
 
@@ -72,6 +79,13 @@ router维护全局在线用户，是一个二级map `user_id -> conn_id -> serve
 
 ## 问题
 
+* 不用 redis 的原因是
+    * 仅需要提供原子性RPC-CRUD内存操作：例如Put同时Counter++, redis要lua
+    * 能支持多核并行：单进程能吃满服务器资源，减少运维复杂度
+    * 进程内分桶，减少锁竞争：桶数量可配置很多；类似redis的scan
+    * 强类型的复杂数据结构：redis仅支持二级kv, v还有json序列化开销
+    * 灵活的脏数据清理策略：redis的TTL大多没用
+    * redis从库？通过logic异步多写来做
 * Kafka不是必须的。[原作者解答为啥要Kafka](https://github.com/Terry-Mao/goim/issues/134)
 * 在开源版上新增的功能
     * 支持上行业务消息
@@ -104,22 +118,45 @@ router维护全局在线用户，是一个二级map `user_id -> conn_id -> serve
 
 瓶颈 CPU > 带宽 > 内存
 
-内部通信瓶颈：
+内部通信无瓶颈，可水平扩容的路径有：
 
-* 客户端发起的RPC mobile -> comet -> micro 无瓶颈，可水平扩容
-* 上线/下线/切换房间/心跳 mobile -> comet -> logic -> router 无瓶颈，可水平扩容
-* 单播 micro -> logic (-> router) -> job -> comet -> mobile 无瓶颈，可水平扩容
+* 客户端发起的RPC mobile -> comet -> micro
+* 上线/下线/切换房间/心跳 mobile -> comet -> logic -> router
+* 单播 micro -> logic (-> router) -> job -> comet -> mobile
+* 在线信息查询
+  + 按用户查在线查房间 /session
+
+内部通信，可能有瓶颈的路径：
+
 * 批量单播  micro -> logic ((N-parallel)-> router) -> job -> comet -> mobile 
   + 限制：一批用户总数，不宜过多
 * 广播 micro -> logic -> job -> comet -> mobile 
   + 限制：由于job定期absorb comet上的room list, so job数量不可过多
   + 改进：logic和job解耦，用kafka连接。由于 job 对 CPU 的消耗在 comet/logic/router 中最少，只需要非常少的 job 实例就行。
 * 在线信息查询
-  + 按用户查在线查房间 /session 无瓶颈，可水平扩容
   + 查在线总数 /count 由于logic定期absorb router上的room users，只能是有限的logic打开counter定时查
   + 按房间查用户 /room 同 /count
+  + 遍历 /list 调试用接口，别用于服务
 
 ## 高可用分析
 
 goim 是 IM 系统的基础设施，其支撑的上层应用需要为用户提供 7-24 小时无间断服务。迭代式开发，要求 goim 内在模块和业务服务的升级、扩容对用户无感知。
 
+comet 重启、升级时，客户端检测到连接断开，自动重连到另一个 comet 
+logic 重启、升级时，comet、micro 会自动寻找下一个 logic
+job 重启、升级时，有其它 job 继续消费 kafka
+router 重启、升级时，由备 router 顶上；升级完成，切回主 router
+
+## 可扩展性分析 
+
+内建插件模式：
+
+* 客户端协议，已经适配 TCP(Mars) WebSocket，未来可以支持 socket.io 
+* 服务端协议，已经适配 Tars，未来可以支持 Micro，或者 gRPC
+* 认证鉴权协议，开放给外部，可定制
+
+## 低成本、安全
+
+* 几乎没有外部依赖，极低的运维成本 (kafka可选，kafka自带zk可以用来作节点发现)
+* 高性能的代码实现，节省服务器成本
+* 集成认证鉴权，也支持 HTTPS 
