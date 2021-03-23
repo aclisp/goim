@@ -1,3 +1,18 @@
+`goim` 
+
+* 曾经稳定的支撑了一个国内语音社交应用两年以上
+* 最大同时在线用户约3万，设计容量能支撑10万+
+* 本身是一个单播广播系统，适用于实时IM场景的应用
+* 分布式架构设计，有横向扩容的能力
+
+参见：[长连接和广播系统设计文档](doc/arch.md)
+
+
+
+~~~
+BELOW IS THE ORIGINAL PROJECT INFORMATION
+~~~
+
 goim
 ==============
 goim is a im server writen by golang.
