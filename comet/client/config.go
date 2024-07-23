@@ -4,7 +4,7 @@ import (
 	"flag"
 	"runtime"
 
-	"github.com/Terry-Mao/goconf"
+	"github.com/aclisp/goconf"
 )
 
 var (

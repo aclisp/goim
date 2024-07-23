@@ -25,7 +25,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/Terry-Mao/goconf"
+	"github.com/aclisp/goconf"
 	log "github.com/aclisp/log4go"
 )
 

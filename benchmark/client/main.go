@@ -19,12 +19,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"bilin/protocol"
+	//"bilin/protocol"
+	"net"
+	"net/url"
+
 	log "github.com/aclisp/log4go"
 	pb "github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
-	"net"
-	"net/url"
 )
 
 const (
@@ -292,17 +293,18 @@ func startTcpClient(key string) {
 
 		enterRoom := func(uid, roomid int64) (err error) {
 			// inner packet
-			req := bilin.EnterBroRoomReq{
-				Header: &bilin.Header{
-					Userid: uint64(uid),
-					Roomid: uint64(roomid),
-				},
-			}
-			reqBuf, err := pb.Marshal(&req)
-			if err != nil {
-				log.Error("key:%s pb.Marshal(%v) error(%v)", key, req, err)
-				return
-			}
+			// req := bilin.EnterBroRoomReq{
+			// 	Header: &bilin.Header{
+			// 		Userid: uint64(uid),
+			// 		Roomid: uint64(roomid),
+			// 	},
+			// }
+			// reqBuf, err := pb.Marshal(&req)
+			// if err != nil {
+			// 	log.Error("key:%s pb.Marshal(%v) error(%v)", key, req, err)
+			// 	return
+			// }
+			reqBuf := []byte{}
 			// outer packet
 			in := RPCInput{
 				ServiceName:   "bilin.bcserver2.BCServantObj",
@@ -333,17 +335,18 @@ func startTcpClient(key string) {
 
 		exitRoom := func(uid, roomid int64) (err error) {
 			// inner packet
-			req := bilin.ExitBroRoomReq{
-				Header: &bilin.Header{
-					Userid: uint64(uid),
-					Roomid: uint64(roomid),
-				},
-			}
-			reqBuf, err := pb.Marshal(&req)
-			if err != nil {
-				log.Error("key:%s pb.Marshal(%v) error(%v)", key, req, err)
-				return
-			}
+			// req := bilin.ExitBroRoomReq{
+			// 	Header: &bilin.Header{
+			// 		Userid: uint64(uid),
+			// 		Roomid: uint64(roomid),
+			// 	},
+			// }
+			// reqBuf, err := pb.Marshal(&req)
+			// if err != nil {
+			// 	log.Error("key:%s pb.Marshal(%v) error(%v)", key, req, err)
+			// 	return
+			// }
+			reqBuf := []byte{}
 			// outer packet
 			in := RPCInput{
 				ServiceName:   "bilin.bcserver2.BCServantObj",
@@ -373,18 +376,19 @@ func startTcpClient(key string) {
 		}
 
 		sendRoomMessage := func(uid, roomid int64) (err error) {
-			req := bilin.SendRoomMessageReq{
-				Header: &bilin.Header{
-					Userid: uint64(uid),
-					Roomid: uint64(roomid),
-				},
-				Data: []byte("Hello Room!"),
-			}
-			reqBuf, err := pb.Marshal(&req)
-			if err != nil {
-				log.Error("key:%s pb.Marshal(%v) error(%v)", key, req, err)
-				return
-			}
+			// req := bilin.SendRoomMessageReq{
+			// 	Header: &bilin.Header{
+			// 		Userid: uint64(uid),
+			// 		Roomid: uint64(roomid),
+			// 	},
+			// 	Data: []byte("Hello Room!"),
+			// }
+			// reqBuf, err := pb.Marshal(&req)
+			// if err != nil {
+			// 	log.Error("key:%s pb.Marshal(%v) error(%v)", key, req, err)
+			// 	return
+			// }
+			reqBuf := []byte{}
 			in := RPCInput{
 				ServiceName:   "bilin.bcserver2.BCServantObj",
 				MethodName:    "SendRoomMessage",

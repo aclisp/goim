@@ -22,7 +22,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/Terry-Mao/goconf"
+	"github.com/aclisp/goconf"
 )
 
 var (
@@ -60,8 +60,8 @@ type Config struct {
 	MonitorOpen  bool     `goconf:"monitor:open"`
 	MonitorAddrs []string `goconf:"monitor:addrs:,"`
 	// auth
-	AuthMode string `goconf:"auth:mode"`
-	AuthKey  string `goconf:"auth:key"`
+	AuthMode  string   `goconf:"auth:mode"`
+	AuthKey   string   `goconf:"auth:key"`
 	AuthBlock []string `goconf:"auth:block:|"` // blocked tokens
 }
 

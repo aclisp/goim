@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/Terry-Mao/goconf"
+	"github.com/aclisp/goconf"
 )
 
 var (

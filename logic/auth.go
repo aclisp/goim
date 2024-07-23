@@ -9,11 +9,11 @@ import (
 type AutherBuilder func() Auther
 
 var AutherRegistry = map[string]AutherBuilder{
-	"bypass":  NewBypassAuther,
-	"bilin":   NewBilinAuther,
-	"bilinx":  NewBilinAutherEx,
+	"bypass": NewBypassAuther,
+	//"bilin":   NewBilinAuther,
+	//"bilinx":  NewBilinAutherEx,
 	//"udbyy":   NewUdbYyAuther,
-	"udbintl": NewUdbIntlAuther,
+	//"udbintl": NewUdbIntlAuther,
 }
 
 // developer could implement "Auth" interface for decide how get userId, or roomId

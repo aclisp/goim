@@ -1,19 +1,19 @@
 package main
 
 import (
-	"context"
 	"encoding/base64"
+	"errors"
+
 	//"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strconv"
 
-	"code.yy.com/yytars/goframework/jce/taf"
-	"code.yy.com/yytars/goframework/tars/servant"
+	//"code.yy.com/yytars/goframework/jce/taf"
+	//"code.yy.com/yytars/goframework/tars/servant"
+	"goim/libs/proto"
+
 	log "github.com/aclisp/log4go"
 	pb "github.com/golang/protobuf/proto"
-	"goim/libs/proto"
-	"goim/libs/define"
 )
 
 // setup yytars communicator
@@ -34,8 +34,9 @@ index d48b961..57275e7 100644
 
  var (
 */
-var comm = servant.NewPbCommunicator()
+//var comm = servant.NewPbCommunicator()
 
+/*
 func invoke(comm *servant.Communicator, input proto.RPCInput) (output proto.RPCOutput, err error) {
 	var (
 		rpcStub *servant.ServantProxy
@@ -69,7 +70,7 @@ func invoke(comm *servant.Communicator, input proto.RPCInput) (output proto.RPCO
 	output.Obj = input.Obj
 	output.Func = input.Func
 	return
-}
+}*/
 
 // RPCInvoker knows how to interpret Proto.Body and invoke downstream service
 type RPCInvoker interface {
@@ -79,12 +80,12 @@ type RPCInvoker interface {
 }
 
 type WebsocketToRPC struct {
-	comm *servant.Communicator
+	//comm *servant.Communicator
 }
 
 func NewWebsocketToRPC() RPCInvoker {
 	return WebsocketToRPC{
-		comm: comm,
+		//comm: comm,
 	}
 }
 
@@ -110,7 +111,9 @@ func (ws WebsocketToRPC) Decode(body json.RawMessage) (input proto.RPCInput, err
 }
 
 func (ws WebsocketToRPC) Invoke(input proto.RPCInput) (output proto.RPCOutput, err error) {
-	return invoke(ws.comm, input)
+	//return invoke(ws.comm, input)
+	err = errors.New("Invoke is not implemented")
+	return
 }
 
 func (ws WebsocketToRPC) Encode(output proto.RPCOutput) (body json.RawMessage, err error) {
@@ -125,12 +128,12 @@ func (ws WebsocketToRPC) Encode(output proto.RPCOutput) (body json.RawMessage, e
 }
 
 type TCPToRPC struct {
-	comm *servant.Communicator
+	//comm *servant.Communicator
 }
 
 func NewTCPToRPC() RPCInvoker {
 	return TCPToRPC{
-		comm: comm,
+		//comm: comm,
 	}
 }
 
@@ -145,7 +148,9 @@ func (t TCPToRPC) Decode(body json.RawMessage) (input proto.RPCInput, err error)
 }
 
 func (t TCPToRPC) Invoke(input proto.RPCInput) (output proto.RPCOutput, err error) {
-	return invoke(t.comm, input)
+	//return invoke(t.comm, input)
+	err = errors.New("Invoke is not implemented")
+	return
 }
 
 func (t TCPToRPC) Encode(output proto.RPCOutput) (body json.RawMessage, err error) {
