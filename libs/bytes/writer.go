@@ -42,5 +42,4 @@ func (w *Writer) grow(n int) {
 	buf = make([]byte, 2*len(w.buf)+n)
 	copy(buf, w.buf[:w.n])
 	w.buf = buf
-	return
 }

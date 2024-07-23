@@ -9,11 +9,10 @@ type RoundOptions struct {
 	TimerSize int
 }
 
-// Ronnd userd for connection round-robin get a timer for split big lock.
+// Round used for connection round-robin get a timer for split big lock.
 type Round struct {
-	timers   []time.Timer
-	options  RoundOptions
-	timerIdx int
+	timers  []time.Timer
+	options RoundOptions
 }
 
 // NewRound new a round struct.

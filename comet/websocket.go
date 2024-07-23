@@ -3,20 +3,20 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"errors"
+	"fmt"
 	"goim/libs/define"
 	"goim/libs/proto"
 	itime "goim/libs/time"
 	"math/rand"
 	"net"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
-	"github.com/gorilla/websocket"
 	log "github.com/aclisp/log4go"
-	"strconv"
-	"fmt"
-	"strings"
-	"errors"
+	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{
@@ -104,7 +104,7 @@ func ShutdownWebsocket() {
 
 func ServeWebSocket(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "GET" {
-		http.Error(w, "Method Not Allowed", 405)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	ws, err := upgrader.Upgrade(w, req, nil)
@@ -213,7 +213,6 @@ func (server *Server) serveWebsocket(conn *websocket.Conn, tr *itime.Timer) {
 	if Debug {
 		log.Debug("key: %s serve websocket goroutine exit", key)
 	}
-	return
 }
 
 // dispatch accepts connections on the listener and serves requests
@@ -274,7 +273,6 @@ failed:
 	if Debug {
 		log.Debug("key: %s dispatch goroutine exit", key)
 	}
-	return
 }
 
 func (server *Server) authWebsocket(conn *websocket.Conn, p *proto.Proto) (key string, rid int64, heartbeat time.Duration, err error) {

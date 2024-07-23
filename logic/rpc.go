@@ -84,7 +84,7 @@ func (r *RPC) Connect(arg *proto.ConnArg, reply *proto.ConnReply) (err error) {
 			if len(others) == 0 {
 				continue
 			}
-			msg := ServerPush{MessageType: 9}  // LOGIN_ELSEWHERE = 9
+			msg := ServerPush{MessageType: 9} // LOGIN_ELSEWHERE = 9
 			var buf []byte
 			if buf, err = pb.Marshal(&msg); err != nil {
 				log.Warn("Connect() notify others, marshal error(%v)", err)

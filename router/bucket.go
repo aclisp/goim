@@ -59,7 +59,7 @@ func (b *Bucket) counter(userId int64, server int32, roomId int64, incr bool) {
 		// WARN:
 		// if decr a userid but key not exists just ignore
 		// this may not happen
-		if v, _ = sm[userId]; v <= 1 {
+		if v = sm[userId]; v <= 1 {
 			delete(sm, userId)
 			if len(sm) == 0 {
 				delete(b.userServerCounter, server)
@@ -67,7 +67,7 @@ func (b *Bucket) counter(userId int64, server int32, roomId int64, incr bool) {
 		} else {
 			sm[userId] = v - 1
 		}
-		if v, _ = rm[userId]; v <= 1 {
+		if v = rm[userId]; v <= 1 {
 			delete(rm, userId)
 			if len(rm) == 0 {
 				delete(b.userRoomCounter, roomId)
@@ -75,12 +75,12 @@ func (b *Bucket) counter(userId int64, server int32, roomId int64, incr bool) {
 		} else {
 			rm[userId] = v - 1
 		}
-		if v, _ = b.roomCounter[roomId]; v <= 1 {
+		if v = b.roomCounter[roomId]; v <= 1 {
 			delete(b.roomCounter, roomId)
 		} else {
 			b.roomCounter[roomId] = v - 1
 		}
-		if v, _ = b.serverCounter[server]; v <= 1 {
+		if v = b.serverCounter[server]; v <= 1 {
 			delete(b.serverCounter, server)
 		} else {
 			b.serverCounter[server] = v - 1
@@ -88,7 +88,7 @@ func (b *Bucket) counter(userId int64, server int32, roomId int64, incr bool) {
 	}
 }
 
-func (b *Bucket) counterRoom(userId int64, server int32, oldRoomId, roomId int64) {
+func (b *Bucket) counterRoom(userId int64, oldRoomId, roomId int64) {
 	var (
 		old map[int64]int32
 		now map[int64]int32
@@ -98,7 +98,7 @@ func (b *Bucket) counterRoom(userId int64, server int32, oldRoomId, roomId int64
 	if oldRoomId == roomId {
 		return
 	}
-	if v, _ = b.roomCounter[oldRoomId]; v <= 1 {
+	if v = b.roomCounter[oldRoomId]; v <= 1 {
 		delete(b.roomCounter, oldRoomId)
 	} else {
 		b.roomCounter[oldRoomId] = v - 1
@@ -112,7 +112,7 @@ func (b *Bucket) counterRoom(userId int64, server int32, oldRoomId, roomId int64
 		now = make(map[int64]int32, b.session)
 		b.userRoomCounter[roomId] = now
 	}
-	if v, _ = old[userId]; v <= 1 {
+	if v = old[userId]; v <= 1 {
 		delete(old, userId)
 		if len(old) == 0 {
 			delete(b.userRoomCounter, oldRoomId)
@@ -229,15 +229,14 @@ func (b *Bucket) Del(userId int64, seq int32, roomId int64) (ok bool) {
 // Mov moves the channel from oldRoomId to roomId
 func (b *Bucket) Mov(userId int64, seq int32, oldRoomId int64, roomId int64) (ok bool) {
 	var (
-		s      *Session
-		server int32
-		has    bool
+		s   *Session
+		has bool
 	)
 	b.bLock.Lock()
 	if s, ok = b.sessions[userId]; ok {
-		has, server = s.MovRoom(seq, oldRoomId, roomId)
+		has, _ = s.MovRoom(seq, oldRoomId, roomId)
 		if has {
-			b.counterRoom(userId, server, oldRoomId, roomId)
+			b.counterRoom(userId, oldRoomId, roomId)
 		}
 	}
 	b.bLock.Unlock()

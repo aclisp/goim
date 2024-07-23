@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"runtime"
 	"time"
 
@@ -190,7 +190,7 @@ type HostInfo struct {
 }
 
 func readHostInfo(filename string) (hostInfo *HostInfo, err error) {
-	content, err := ioutil.ReadFile(filename)
+	content, err := os.ReadFile(filename)
 	if err != nil {
 		return
 	}

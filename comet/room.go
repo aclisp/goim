@@ -67,7 +67,6 @@ func (r *Room) Push(p *proto.Proto) {
 		ch.Push(p)
 	}
 	r.rLock.RUnlock()
-	return
 }
 
 // Close close the room.

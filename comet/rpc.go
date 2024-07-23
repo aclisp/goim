@@ -46,12 +46,12 @@ func rpcListen(network, addr string) {
 type PushRPC struct {
 }
 
-func (this *PushRPC) Ping(arg *proto.NoArg, reply *proto.NoReply) error {
+func (rpc *PushRPC) Ping(arg *proto.NoArg, reply *proto.NoReply) error {
 	return nil
 }
 
 // Push push a message to a specified sub key
-func (this *PushRPC) PushMsg(arg *proto.PushMsgArg, reply *proto.NoReply) (err error) {
+func (rpc *PushRPC) PushMsg(arg *proto.PushMsgArg, reply *proto.NoReply) (err error) {
 	var (
 		bucket  *Bucket
 		channel *Channel
@@ -68,7 +68,7 @@ func (this *PushRPC) PushMsg(arg *proto.PushMsgArg, reply *proto.NoReply) (err e
 }
 
 // Push push a message to specified sub keys
-func (this *PushRPC) MPushMsg(arg *proto.MPushMsgArg, reply *proto.MPushMsgReply) (err error) {
+func (rpc *PushRPC) MPushMsg(arg *proto.MPushMsgArg, reply *proto.MPushMsgReply) (err error) {
 	var (
 		bucket  *Bucket
 		channel *Channel
@@ -93,7 +93,7 @@ func (this *PushRPC) MPushMsg(arg *proto.MPushMsgArg, reply *proto.MPushMsgReply
 }
 
 // MPushMsgs push msgs to multiple user.
-func (this *PushRPC) MPushMsgs(arg *proto.MPushMsgsArg, reply *proto.MPushMsgsReply) (err error) {
+func (rpc *PushRPC) MPushMsgs(arg *proto.MPushMsgsArg, reply *proto.MPushMsgsReply) (err error) {
 	var (
 		bucket  *Bucket
 		channel *Channel
@@ -119,7 +119,7 @@ func (this *PushRPC) MPushMsgs(arg *proto.MPushMsgsArg, reply *proto.MPushMsgsRe
 }
 
 // Broadcast broadcast msg to all user.
-func (this *PushRPC) Broadcast(arg *proto.BoardcastArg, reply *proto.NoReply) (err error) {
+func (rpc *PushRPC) Broadcast(arg *proto.BoardcastArg, reply *proto.NoReply) (err error) {
 	var bucket *Bucket
 	for _, bucket = range DefaultServer.Buckets {
 		go bucket.Broadcast(&arg.P)
@@ -128,7 +128,7 @@ func (this *PushRPC) Broadcast(arg *proto.BoardcastArg, reply *proto.NoReply) (e
 }
 
 // Broadcast broadcast msg to specified room.
-func (this *PushRPC) BroadcastRoom(arg *proto.BoardcastRoomArg, reply *proto.NoReply) (err error) {
+func (rpc *PushRPC) BroadcastRoom(arg *proto.BoardcastRoomArg, reply *proto.NoReply) (err error) {
 	var bucket *Bucket
 	for _, bucket = range DefaultServer.Buckets {
 		bucket.BroadcastRoom(arg)
@@ -136,14 +136,14 @@ func (this *PushRPC) BroadcastRoom(arg *proto.BoardcastRoomArg, reply *proto.NoR
 	return
 }
 
-func (this *PushRPC) Rooms(arg *proto.NoArg, reply *proto.RoomsReply) (err error) {
+func (rpc *PushRPC) Rooms(arg *proto.NoArg, reply *proto.RoomsReply) (err error) {
 	var (
 		roomId  int64
 		bucket  *Bucket
 		roomIds = make(map[int64]struct{})
 	)
 	for _, bucket = range DefaultServer.Buckets {
-		for roomId, _ = range bucket.Rooms() {
+		for roomId = range bucket.Rooms() {
 			roomIds[roomId] = struct{}{}
 		}
 	}

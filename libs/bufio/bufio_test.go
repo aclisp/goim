@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 	"testing/iotest"
@@ -147,7 +146,7 @@ func TestReader(t *testing.T) {
 	for i := 0; i < len(texts)-1; i++ {
 		texts[i] = str + "\n"
 		all += texts[i]
-		str += string(i%26 + 'a')
+		str += string(rune(i%26 + 'a'))
 	}
 	texts[len(texts)-1] = all
 
@@ -642,8 +641,8 @@ func TestWriteString(t *testing.T) {
 		t.Error("WriteString", err)
 	}
 	s := "01234567890abcdefghijklmnopqrstuvwxyz"
-	if string(buf.Bytes()) != s {
-		t.Errorf("WriteString wants %q gets %q", s, string(buf.Bytes()))
+	if buf.String() != s {
+		t.Errorf("WriteString wants %q gets %q", s, buf.String())
 	}
 }
 
@@ -851,7 +850,7 @@ func TestReadEmptyBuffer(t *testing.T) {
 
 func TestLinesAfterRead(t *testing.T) {
 	l := NewReaderSize(bytes.NewReader([]byte("foo")), minReadBufferSize)
-	_, err := ioutil.ReadAll(l)
+	_, err := io.ReadAll(l)
 	if err != nil {
 		t.Error(err)
 		return
@@ -1213,7 +1212,7 @@ func TestWriterReadFromUntilEOF(t *testing.T) {
 		t.Fatalf("ReadFrom returned (%v, %v), want (4, nil)", n2, err)
 	}
 	w.Flush()
-	if got, want := string(buf.Bytes()), "0123abcd"; got != want {
+	if got, want := buf.String(), "0123abcd"; got != want {
 		t.Fatalf("buf.Bytes() returned %q, want %q", got, want)
 	}
 }
@@ -1244,7 +1243,7 @@ func TestReaderReset(t *testing.T) {
 		t.Errorf("buf = %q; want foo", buf)
 	}
 	r.Reset(strings.NewReader("bar bar"))
-	all, err := ioutil.ReadAll(r)
+	all, err := io.ReadAll(r)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1471,13 +1470,13 @@ func BenchmarkReaderWriteToOptimal(b *testing.B) {
 	buf := make([]byte, bufSize)
 	r := bytes.NewReader(buf)
 	srcReader := NewReaderSize(onlyReader{r}, 1<<10)
-	if _, ok := ioutil.Discard.(io.ReaderFrom); !ok {
-		b.Fatal("ioutil.Discard doesn't support ReaderFrom")
+	if _, ok := io.Discard.(io.ReaderFrom); !ok {
+		b.Fatal("io.Discard doesn't support ReaderFrom")
 	}
 	for i := 0; i < b.N; i++ {
 		r.Seek(0, 0)
 		srcReader.Reset(onlyReader{r})
-		n, err := srcReader.WriteTo(ioutil.Discard)
+		n, err := srcReader.WriteTo(io.Discard)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -1533,7 +1532,7 @@ func BenchmarkReaderEmpty(b *testing.B) {
 	str := strings.Repeat("x", 16<<10)
 	for i := 0; i < b.N; i++ {
 		br := NewReader(strings.NewReader(str))
-		n, err := io.Copy(ioutil.Discard, br)
+		n, err := io.Copy(io.Discard, br)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -1548,7 +1547,7 @@ func BenchmarkWriterEmpty(b *testing.B) {
 	str := strings.Repeat("x", 1<<10)
 	bs := []byte(str)
 	for i := 0; i < b.N; i++ {
-		bw := NewWriter(ioutil.Discard)
+		bw := NewWriter(io.Discard)
 		bw.Flush()
 		bw.WriteByte('a')
 		bw.Flush()
@@ -1563,7 +1562,7 @@ func BenchmarkWriterEmpty(b *testing.B) {
 
 func BenchmarkWriterFlush(b *testing.B) {
 	b.ReportAllocs()
-	bw := NewWriter(ioutil.Discard)
+	bw := NewWriter(io.Discard)
 	str := strings.Repeat("x", 50)
 	for i := 0; i < b.N; i++ {
 		bw.WriteString(str)

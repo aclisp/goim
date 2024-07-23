@@ -32,7 +32,7 @@ type Config struct {
 	Rcvbuf        int    `goconf:"proto:rcvbuf:memory"`
 	Type          int    `goconf:"proto:type"`
 	// sub
-	SubKey string `goconf:sub:sub.key`
+	SubKey string `goconf:"sub:sub.key"`
 }
 
 func NewConfig() *Config {

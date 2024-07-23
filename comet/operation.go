@@ -67,10 +67,7 @@ func (operator *DefaultOperator) Operate(p *proto.Proto, connType ConnType, optM
 			}
 			input.Opt[k] = v
 		}
-		output, err := invoker.Invoke(input)
-		if err != nil {
-			//return err
-		}
+		output, _ := invoker.Invoke(input)
 		p.Body, err = invoker.Encode(output)
 		if err != nil {
 			return err
@@ -86,7 +83,7 @@ func (operator *DefaultOperator) Operate(p *proto.Proto, connType ConnType, optM
 	return nil
 }
 
-func (operator * DefaultOperator) Direct(input proto.RPCInput, connType ConnType, optMerge map[string]string) (output proto.RPCOutput, err error) {
+func (operator *DefaultOperator) Direct(input proto.RPCInput, connType ConnType, optMerge map[string]string) (output proto.RPCOutput, err error) {
 	var (
 		invoker RPCInvoker
 	)
@@ -140,7 +137,7 @@ func (operator *DefaultOperator) Update(key string, rid int64) (err error) {
 	return
 }
 
-func (Operator *DefaultOperator) Register() (err error ) {
+func (Operator *DefaultOperator) Register() (err error) {
 	err = register()
 	return
 }

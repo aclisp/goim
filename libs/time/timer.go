@@ -12,10 +12,6 @@ const (
 	infiniteDuration = itime.Duration(1<<63 - 1)
 )
 
-var (
-	timerLazyDelay = 300 * itime.Millisecond
-)
-
 type TimerData struct {
 	Key    string
 	expire itime.Time
@@ -25,7 +21,7 @@ type TimerData struct {
 }
 
 func (td *TimerData) Delay() itime.Duration {
-	return td.expire.Sub(itime.Now())
+	return itime.Until(td.expire)
 }
 
 func (td *TimerData) ExpireString() string {
@@ -44,7 +40,6 @@ type Timer struct {
 // can be used. Init is idempotent with respect to the heap invariants
 // and may be called whenever the heap invariants may have been invalidated.
 // Its complexity is O(n) where n = h.Len().
-//
 func NewTimer(num int) (t *Timer) {
 	t = new(Timer)
 	t.init(num)
@@ -77,7 +72,6 @@ func (t *Timer) grow() {
 		td = td.next
 	}
 	td.next = nil
-	return
 }
 
 // get get a free timer data.
@@ -116,7 +110,6 @@ func (t *Timer) Del(td *TimerData) {
 	t.del(td)
 	t.put(td)
 	t.lock.Unlock()
-	return
 }
 
 // Push pushes the element x onto the heap. The complexity is
@@ -138,7 +131,6 @@ func (t *Timer) add(td *TimerData) {
 	if Debug {
 		log.Debug("timer: push item key: %s, expire: %s, index: %d", td.Key, td.ExpireString(), td.index)
 	}
-	return
 }
 
 func (t *Timer) del(td *TimerData) {
@@ -164,7 +156,6 @@ func (t *Timer) del(td *TimerData) {
 	if Debug {
 		log.Debug("timer: remove item key: %s, expire: %s, index: %d", td.Key, td.ExpireString(), td.index)
 	}
-	return
 }
 
 // Set update timer data.
@@ -174,7 +165,6 @@ func (t *Timer) Set(td *TimerData, expire itime.Duration) {
 	td.expire = itime.Now().Add(expire)
 	t.add(td)
 	t.lock.Unlock()
-	return
 }
 
 // start start the timer.
@@ -226,7 +216,6 @@ func (t *Timer) expire() {
 		log.Debug("timer: expire reset delay %d ms", int64(d)/int64(itime.Millisecond))
 	}
 	t.lock.Unlock()
-	return
 }
 
 func (t *Timer) up(j int) {

@@ -46,11 +46,11 @@ func rpcListen(network, addr string) {
 type JobRPC struct {
 }
 
-func (this *JobRPC) Ping(arg *proto.NoArg, reply *proto.NoReply) error {
+func (rpc *JobRPC) Ping(arg *proto.NoArg, reply *proto.NoReply) error {
 	return nil
 }
 
-func (this *JobRPC) Push(arg *proto.KafkaMsg, reply *proto.NoReply) error {
+func (rpc *JobRPC) Push(arg *proto.KafkaMsg, reply *proto.NoReply) error {
 	producePush(arg)
 	return nil
 }

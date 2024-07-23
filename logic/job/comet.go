@@ -6,10 +6,10 @@ import (
 	inet "goim/libs/net"
 	"goim/libs/net/xrpc"
 	"goim/libs/proto"
-
-	log "github.com/aclisp/log4go"
 	"strings"
 	"sync/atomic"
+
+	log "github.com/aclisp/log4go"
 )
 
 var (
@@ -81,21 +81,18 @@ func (c *Comet) process(pushChan chan *proto.MPushMsgArg, roomChan chan *proto.B
 			if err != nil {
 				log.Error("rpcClient.Call(%s, %v, reply) serverId:%d error(%v)", CometServiceMPushMsg, pushArg, c.serverId, err)
 			}
-			pushArg = nil
 		case roomArg = <-roomChan:
 			// room
 			err = c.rpcClient.Call(CometServiceBroadcastRoom, roomArg, reply)
 			if err != nil {
 				log.Error("rpcClient.Call(%s, %v, reply) serverId:%d error(%v)", CometServiceBroadcastRoom, roomArg, c.serverId, err)
 			}
-			roomArg = nil
 		case broadcastArg = <-broadcastChan:
 			// broadcast
 			err = c.rpcClient.Call(CometServiceBroadcast, broadcastArg, reply)
 			if err != nil {
 				log.Error("rpcClient.Call(%s, %v, reply) serverId:%d error(%v)", CometServiceBroadcast, broadcastArg, c.serverId, err)
 			}
-			broadcastArg = nil
 		}
 	}
 }
@@ -186,7 +183,7 @@ func broadcastRoomBytes(roomId int64, body []byte) {
 		err      error
 	)
 	if servers, ok = RoomServersMap[roomId]; ok {
-		for serverId, _ = range servers {
+		for serverId = range servers {
 			if c, ok = cometServiceMap[serverId]; ok {
 				// push routines
 				if err = c.BroadcastRoom(&args); err != nil {

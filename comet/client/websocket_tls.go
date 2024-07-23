@@ -3,7 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
+	"os"
 	"time"
 
 	log "github.com/aclisp/log4go"
@@ -19,7 +19,7 @@ func initWebsocketTLS() {
 		return
 	}
 	roots := x509.NewCertPool()
-	certPem, err := ioutil.ReadFile(Conf.CertFile)
+	certPem, err := os.ReadFile(Conf.CertFile)
 	if err != nil {
 		panic(err)
 	}

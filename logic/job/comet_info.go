@@ -27,7 +27,7 @@ func MergeRoomServers() {
 		if c.rpcClient != nil {
 			if roomIds = roomsComet(c.rpcClient); roomIds != nil {
 				// merge room's servers
-				for roomId, _ = range roomIds {
+				for roomId = range roomIds {
 					if servers, ok = roomServers[roomId]; !ok {
 						servers = make(map[int32]struct{})
 						roomServers[roomId] = servers

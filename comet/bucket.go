@@ -106,7 +106,7 @@ func (b *Bucket) Del(key string) {
 	if ch, ok = b.chs[key]; ok {
 		delete(b.chs, key)
 		if ch.RoomId != define.NoRoom {
-			room, _ = b.rooms[ch.RoomId]
+			room = b.rooms[ch.RoomId]
 		}
 	}
 	b.cLock.Unlock()
@@ -138,7 +138,7 @@ func (b *Bucket) Broadcast(p *proto.Proto) {
 // Room get a room by roomid.
 func (b *Bucket) Room(rid int64) (room *Room) {
 	b.cLock.RLock()
-	room, _ = b.rooms[rid]
+	room = b.rooms[rid]
 	b.cLock.RUnlock()
 	return
 }
@@ -147,14 +147,13 @@ func (b *Bucket) Room(rid int64) (room *Room) {
 func (b *Bucket) DelRoom(rid int64) {
 	var room *Room
 	b.cLock.Lock()
-	if room, _ = b.rooms[rid]; room != nil {
+	if room = b.rooms[rid]; room != nil {
 		delete(b.rooms, rid)
 	}
 	b.cLock.Unlock()
 	if room != nil {
 		room.Close()
 	}
-	return
 }
 
 // BroadcastRoom broadcast a message to specified room

@@ -110,7 +110,7 @@ func result() {
 		nowCount = atomic.LoadInt64(&countDown)
 		diff = nowCount - lastTimes
 		lastTimes = nowCount
-		fmt.Println(fmt.Sprintf("%s down:%d down/s:%d", time.Now().Format("2006-01-02 15:04:05"), nowCount, diff/timer))
+		fmt.Printf("%s down:%d down/s:%d\n", time.Now().Format("2006-01-02 15:04:05"), nowCount, diff/timer)
 		time.Sleep(time.Duration(timer) * time.Second)
 	}
 }
@@ -573,8 +573,8 @@ func tcpReadProto(rd *bufio.Reader, proto *Proto) (err error) {
 		return
 	}
 	var (
-		n = int(0)
-		t = int(0)
+		n int
+		t int
 	)
 	//log.Debug("read body len: %d", bodyLen)
 	if bodyLen > 0 {
@@ -585,8 +585,6 @@ func tcpReadProto(rd *bufio.Reader, proto *Proto) (err error) {
 			}
 			if n += t; n == int(bodyLen) {
 				break
-			} else if n < int(bodyLen) {
-			} else {
 			}
 		}
 	} else {

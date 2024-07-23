@@ -37,30 +37,6 @@ func IsLittleEndian() bool {
 	return (b == 0x04)
 }
 
-func unalignedLoad64(p []byte) (result uint64) {
-	return binary.LittleEndian.Uint64(p)
-	/*
-	   if little {
-	       result = binary.LittleEndian.Uint64(p)
-	   } else {
-	       result = binary.BigEndian.Uint64(p)
-	   }
-	   return result
-	*/
-}
-
-func unalignedLoad32(p []byte) (result uint32) {
-	return binary.LittleEndian.Uint32(p)
-	/*
-	   if little {
-	       result = binary.LittleEndian.Uint32(p)
-	   } else {
-	       result = binary.BigEndian.Uint32(p)
-	   }
-	   return result
-	*/
-}
-
 func bswap64(x uint64) uint64 {
 	// Copied from netbsd's bswap64.c
 	return ((x << 56) & 0xff00000000000000) |
@@ -79,26 +55,6 @@ func bswap32(x uint32) uint32 {
 		((x << 8) & 0x00ff0000) |
 		((x >> 8) & 0x0000ff00) |
 		((x >> 24) & 0x000000ff)
-}
-
-func uint32InExpectedOrder(x uint32) uint32 {
-	/*
-	   if !little {
-	       return bswap32(x)
-	   }
-	*/
-
-	return x
-}
-
-func uint64InExpectedOrder(x uint64) uint64 {
-	/*
-	   if !little {
-	       return bswap64(x)
-	   }
-	*/
-
-	return x
 }
 
 // If I understand the original code correctly, it's expecting to load either 8 or 4
@@ -466,8 +422,8 @@ func CityHash64WithSeeds(s []byte, length uint32, seed0, seed1 uint64) uint64 {
 func cityMurmur(s []byte, length uint32, seed Uint128) Uint128 {
 	var a uint64 = seed.Lower64()
 	var b uint64 = seed.Higher64()
-	var c uint64 = 0
-	var d uint64 = 0
+	var c uint64
+	var d uint64
 	var l int32 = int32(length) - 16
 
 	if l <= 0 { // len <= 16

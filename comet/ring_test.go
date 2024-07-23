@@ -89,7 +89,7 @@ func TestRing(t *testing.T) {
 	}
 	p2.SeqId = 12
 	r.SetAdv()
-	p3, err = r.Set()
+	_, err = r.Set()
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -118,7 +118,7 @@ func TestRing(t *testing.T) {
 		t.FailNow()
 	}
 	r.GetAdv()
-	p3, err = r.Get()
+	_, err = r.Get()
 	if err != nil {
 		t.Error(err)
 		t.FailNow()

@@ -247,7 +247,6 @@ func (server *Server) serveTCP(conn *net.TCPConn, rp, wp *bytes.Pool, tr *itime.
 	if Debug {
 		log.Debug("%p key: %s serve tcp goroutine exit", conn, key)
 	}
-	return
 }
 
 // dispatch accepts connections on the listener and serves requests
@@ -287,7 +286,7 @@ func (server *Server) dispatchTCP(key string, conn *net.TCPConn, wr *bufio.Write
 			// fetch message from svrbox(client send)
 			for {
 				if p, err = ch.CliProto.Get(); err != nil {
-					err = nil // must be empty error
+					//err = nil // must be empty error
 					break
 				}
 				if white {
@@ -347,7 +346,6 @@ failed:
 	if Debug {
 		log.Debug("%p key: %s dispatch goroutine exit", conn, key)
 	}
-	return
 }
 
 // auth for goim handshake with client, use rsa & aes.

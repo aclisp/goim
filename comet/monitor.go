@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	log "github.com/aclisp/log4go"
 	"net/http"
+
+	log "github.com/aclisp/log4go"
 )
 
 type Monitor struct {
@@ -17,7 +18,7 @@ func InitMonitor(binds []string) {
 	for _, addr := range binds {
 		go func(bind string) {
 			if err := http.ListenAndServe(bind, monitorServeMux); err != nil {
-				log.Error("http.ListenAndServe(\"%s\", pprofServeMux) error(%v)", addr, err)
+				log.Error("http.ListenAndServe(\"%s\", pprofServeMux) error(%v)", bind, err)
 				panic(err)
 			}
 		}(addr)

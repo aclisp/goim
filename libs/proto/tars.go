@@ -2,6 +2,7 @@ package proto
 
 import (
 	"encoding/json"
+
 	pb "github.com/golang/protobuf/proto"
 )
 
@@ -15,9 +16,9 @@ type RPCInput struct {
 	Opt  map[string]string `protobuf:"bytes,4,rep,name=opt" json:"opt,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 }
 
-func (m *RPCInput) Reset()                    { *m = RPCInput{} }
-func (m *RPCInput) String() string            { return pb.CompactTextString(m) }
-func (*RPCInput) ProtoMessage()               {}
+func (m *RPCInput) Reset()         { *m = RPCInput{} }
+func (m *RPCInput) String() string { return pb.CompactTextString(m) }
+func (*RPCInput) ProtoMessage()    {}
 
 // RPCOutput is what the downstream service returns
 type RPCOutput struct {
@@ -29,6 +30,6 @@ type RPCOutput struct {
 	Func string            `protobuf:"bytes,6,opt,name=func" json:"func,omitempty"`
 }
 
-func (m *RPCOutput) Reset()                    { *m = RPCOutput{} }
-func (m *RPCOutput) String() string            { return pb.CompactTextString(m) }
-func (*RPCOutput) ProtoMessage()               {}
+func (m *RPCOutput) Reset()         { *m = RPCOutput{} }
+func (m *RPCOutput) String() string { return pb.CompactTextString(m) }
+func (*RPCOutput) ProtoMessage()    {}

@@ -16,15 +16,12 @@ type RoundOptions struct {
 	WriteBufSize int
 }
 
-// Ronnd userd for connection round-robin get a reader/writer/timer for split big lock.
+// Round used for connection round-robin get a reader/writer/timer for split big lock.
 type Round struct {
-	readers   []bytes.Pool
-	writers   []bytes.Pool
-	timers    []time.Timer
-	options   RoundOptions
-	readerIdx int
-	writerIdx int
-	timerIdx  int
+	readers []bytes.Pool
+	writers []bytes.Pool
+	timers  []time.Timer
+	options RoundOptions
 }
 
 // NewRound new a round struct.

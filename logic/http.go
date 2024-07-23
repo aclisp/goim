@@ -6,7 +6,7 @@ import (
 	"fmt"
 	inet "goim/libs/net"
 	"goim/libs/proto"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strconv"
@@ -64,7 +64,7 @@ func retWrite(w http.ResponseWriter, r *http.Request, res map[string]interface{}
 	if _, err := w.Write([]byte(dataStr)); err != nil {
 		log.Error("w.Write(\"%s\") error(%v)", dataStr, err)
 	}
-	log.Fine("req: \"%s\", ip:\"%s\", time:\"%fs\"", r.URL.String(), r.RemoteAddr, time.Now().Sub(start).Seconds())
+	log.Fine("req: \"%s\", ip:\"%s\", time:\"%fs\"", r.URL.String(), r.RemoteAddr, time.Since(start).Seconds())
 }
 
 // retPWrite marshal the result and write to client(post).
@@ -78,7 +78,7 @@ func retPWrite(w http.ResponseWriter, r *http.Request, res map[string]interface{
 	if _, err := w.Write([]byte(dataStr)); err != nil {
 		log.Error("w.Write(\"%s\") error(%v)", dataStr, err)
 	}
-	log.Debug("req: \"%s\", post: \"%s\", res:\"%s\", ip:\"%s\", time:\"%fs\"", r.URL.String(), *body, dataStr, r.RemoteAddr, time.Now().Sub(start).Seconds())
+	log.Debug("req: \"%s\", post: \"%s\", res:\"%s\", ip:\"%s\", time:\"%fs\"", r.URL.String(), *body, dataStr, r.RemoteAddr, time.Since(start).Seconds())
 }
 
 func dump(data []byte) string {
@@ -90,7 +90,7 @@ func dump(data []byte) string {
 
 func Push(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		http.Error(w, "Method Not Allowed", 405)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	var (
@@ -112,8 +112,8 @@ func Push(w http.ResponseWriter, r *http.Request) {
 	)
 	_, kick := param["kick"]
 	defer retPWrite(w, r, res, &body, time.Now())
-	if bodyBytes, err = ioutil.ReadAll(r.Body); err != nil {
-		log.Error("ioutil.ReadAll() failed (%s)", err)
+	if bodyBytes, err = io.ReadAll(r.Body); err != nil {
+		log.Error("io.ReadAll() failed (%s)", err)
 		res["ret"] = InternalErr
 		return
 	}
@@ -168,13 +168,6 @@ func Push(w http.ResponseWriter, r *http.Request) {
 	if len(userOff) > 0 {
 		res["offline"] = userOff
 	}
-	return
-}
-
-type pushsBodyMsg struct {
-	Msg     json.RawMessage `json:"m"`
-	UserIds []int64         `json:"u"`
-	AppId   int16           `json:"a"`
 }
 
 func parsePushsBody(body []byte) (msg []byte, userIds []int64, err error) {
@@ -218,7 +211,7 @@ func (*MultiPush) ProtoMessage()    {}
 
 func Pushs(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		http.Error(w, "Method Not Allowed", 405)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	var (
@@ -235,8 +228,8 @@ func Pushs(w http.ResponseWriter, r *http.Request) {
 		keys      []string
 	)
 	defer retPWrite(w, r, res, &body, time.Now())
-	if bodyBytes, err = ioutil.ReadAll(r.Body); err != nil {
-		log.Error("ioutil.ReadAll() failed (%s)", err)
+	if bodyBytes, err = io.ReadAll(r.Body); err != nil {
+		log.Error("io.ReadAll() failed (%s)", err)
 		res["ret"] = InternalErr
 		return
 	}
@@ -284,12 +277,11 @@ func Pushs(w http.ResponseWriter, r *http.Request) {
 	if len(userOff) > 0 {
 		res["offline"] = userOff
 	}
-	return
 }
 
 func PushRoom(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		http.Error(w, "Method Not Allowed", 405)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	var (
@@ -303,8 +295,8 @@ func PushRoom(w http.ResponseWriter, r *http.Request) {
 		res       = map[string]interface{}{"ret": OK}
 	)
 	defer retPWrite(w, r, res, &body, time.Now())
-	if bodyBytes, err = ioutil.ReadAll(r.Body); err != nil {
-		log.Error("ioutil.ReadAll() failed (%v)", err)
+	if bodyBytes, err = io.ReadAll(r.Body); err != nil {
+		log.Error("io.ReadAll() failed (%v)", err)
 		res["ret"] = InternalErr
 		return
 	}
@@ -348,12 +340,11 @@ func PushRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	res["ret"] = OK
-	return
 }
 
 func PushAll(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		http.Error(w, "Method Not Allowed", 405)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	var (
@@ -364,8 +355,8 @@ func PushAll(w http.ResponseWriter, r *http.Request) {
 		res       = map[string]interface{}{"ret": OK}
 	)
 	defer retPWrite(w, r, res, &body, time.Now())
-	if bodyBytes, err = ioutil.ReadAll(r.Body); err != nil {
-		log.Error("ioutil.ReadAll() failed (%v)", err)
+	if bodyBytes, err = io.ReadAll(r.Body); err != nil {
+		log.Error("io.ReadAll() failed (%v)", err)
 		res["ret"] = InternalErr
 		return
 	}
@@ -392,7 +383,6 @@ func PushAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	res["ret"] = OK
-	return
 }
 
 type RoomCounter struct {
@@ -407,7 +397,7 @@ type ServerCounter struct {
 
 func Count(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		http.Error(w, "Method Not Allowed", 405)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	var (
@@ -430,12 +420,11 @@ func Count(w http.ResponseWriter, r *http.Request) {
 		m, _ := allServerInfo()
 		res["meta"] = m
 	}
-	return
 }
 
 func Session(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		http.Error(w, "Method Not Allowed", 405)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	var (
@@ -456,20 +445,19 @@ func Session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	res["session"] = session
-	return
 }
 
 func Room(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		http.Error(w, "Method Not Allowed", 405)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	var (
-		users   map[int64]int32
-		err     error
-		roomId  int64
-		ridStr  = r.URL.Query().Get("rid")
-		res     = map[string]interface{}{"ret": OK}
+		users  map[int64]int32
+		err    error
+		roomId int64
+		ridStr = r.URL.Query().Get("rid")
+		res    = map[string]interface{}{"ret": OK}
 	)
 	defer retWrite(w, r, res, time.Now())
 	if roomId, err = strconv.ParseInt(ridStr, 10, 64); err != nil {
@@ -480,12 +468,11 @@ func Room(w http.ResponseWriter, r *http.Request) {
 	users = UserRoomCountMap[roomId]
 	res["room"] = roomId
 	res["users"] = users
-	return
 }
 
 func List(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		http.Error(w, "Method Not Allowed", 405)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	type Session struct {
@@ -518,5 +505,4 @@ func List(w http.ResponseWriter, r *http.Request) {
 		data[node.node] = sessions
 	}
 	res["nodes"] = data
-	return
 }

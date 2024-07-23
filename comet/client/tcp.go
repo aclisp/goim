@@ -136,8 +136,8 @@ func tcpReadProto(rd *bufio.Reader, proto *Proto) (err error) {
 	}
 	log.Debug("seqId: %d", proto.SeqId)
 	var (
-		n       = int(0)
-		t       = int(0)
+		n       int
+		t       int
 		bodyLen = int(packLen - int32(headerLen))
 	)
 	log.Debug("read body len: %d", bodyLen)
@@ -149,8 +149,6 @@ func tcpReadProto(rd *bufio.Reader, proto *Proto) (err error) {
 			}
 			if n += t; n == bodyLen {
 				break
-			} else if n < bodyLen {
-			} else {
 			}
 		}
 	} else {

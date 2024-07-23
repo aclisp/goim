@@ -102,7 +102,6 @@ func (r *Room) Push(ver int16, operation int32, msg []byte) (err error) {
 func (r *Room) EPush(ver int16, operation int32, msg []byte) {
 	var p = &proto.Proto{Ver: ver, Operation: operation, Body: msg}
 	r.proto <- p
-	return
 }
 
 // pushproc merge proto and push msgs in batch.

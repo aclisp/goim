@@ -22,7 +22,7 @@ type Auther interface {
 }
 
 func authWithString(token string) (userId int64, roomId int64, err error) {
-	var appId int64 = 0
+	var appId int64
 	userId = 0
 	roomId = define.NoRoom
 	if len(token) < 2 {
@@ -45,13 +45,4 @@ func authWithString(token string) (userId int64, roomId int64, err error) {
 	userId = (appId << 48) | userId
 	roomId = (appId << 48) | roomId
 	return
-}
-
-func authBlocked(token, userid string) bool {
-	for _, t := range Conf.AuthBlock {
-		if t == token {
-			return true
-		}
-	}
-	return false
 }

@@ -964,5 +964,4 @@ func TestHash(t *testing.T) {
 		test(testdata[i], i*i, i, t)
 	}
 	test(testdata[i], 0, kDataSize, t)
-	return
 }

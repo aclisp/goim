@@ -56,7 +56,7 @@ func TestRouterDel(t *testing.T) {
 		t.FailNow()
 	}
 	if !reply1.Has {
-		t.Errorf("reply has: %d not equal true", reply1.Has)
+		t.Errorf("reply has: %v not equal true", reply1.Has)
 		t.FailNow()
 	}
 }
@@ -85,7 +85,7 @@ func TestRouterGet(t *testing.T) {
 	}
 	sort.Ints(seqs)
 	if seqs[0] != 1 || seqs[1] != 2 {
-		t.Error("reply seqs not match, %v", reply.Seqs)
+		t.Errorf("reply seqs not match, %v", reply.Seqs)
 		t.FailNow()
 	}
 	if reply.Servers[0] != 0 || reply.Servers[1] != 0 {

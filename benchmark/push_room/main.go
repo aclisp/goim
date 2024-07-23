@@ -8,11 +8,12 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
 	pb "github.com/golang/protobuf/proto"
 )
 
@@ -25,9 +26,9 @@ type ServerPush struct {
 	MethodName  string            `protobuf:"bytes,6,opt,name=methodName" json:"methodName,omitempty"`
 }
 
-func (m *ServerPush) Reset()                    { *m = ServerPush{} }
-func (m *ServerPush) String() string            { return pb.CompactTextString(m) }
-func (*ServerPush) ProtoMessage()               {}
+func (m *ServerPush) Reset()         { *m = ServerPush{} }
+func (m *ServerPush) String() string { return pb.CompactTextString(m) }
+func (*ServerPush) ProtoMessage()    {}
 
 func main() {
 	rountineNum, err := strconv.Atoi(os.Args[2])
@@ -60,7 +61,7 @@ func run(addr string, delay time.Duration) {
 
 func post(addr string, i int64) {
 	msg := &ServerPush{
-		PushBuffer: []byte("abc"),
+		PushBuffer:  []byte("abc"),
 		ServiceName: "push.test",
 		Headers: map[string]string{
 			"room": os.Args[1],
@@ -72,13 +73,13 @@ func post(addr string, i int64) {
 	}
 	resp, err := http.Post("http://"+addr+"/1/push/room?rid="+os.Args[1], "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		fmt.Println("Error: http.post() error(%s)", err)
+		fmt.Printf("Error: http.post() error(%s)\n", err)
 		return
 	}
 	defer resp.Body.Close()
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err = io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Error: http.post() error(%s)", err)
+		fmt.Printf("Error: http.post() error(%s)\n", err)
 		return
 	}
 

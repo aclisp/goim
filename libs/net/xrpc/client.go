@@ -91,7 +91,6 @@ func (c *Client) Ping(serviceMethod string) {
 		select {
 		case <-c.quit:
 			goto closed
-			return
 		default:
 		}
 		if c.Client != nil && c.err == nil {

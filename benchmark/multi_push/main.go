@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -14,13 +13,13 @@ import (
 	"runtime"
 	"strconv"
 	"time"
+
 	pb "github.com/golang/protobuf/proto"
 )
 
 var (
 	lg         *log.Logger
 	httpClient *http.Client
-	t          int
 )
 
 const TestContent = "{\"test\":1}"
@@ -34,9 +33,9 @@ type ServerPush struct {
 	MethodName  string            `protobuf:"bytes,6,opt,name=methodName" json:"methodName,omitempty"`
 }
 
-func (m *ServerPush) Reset()                    { *m = ServerPush{} }
-func (m *ServerPush) String() string            { return pb.CompactTextString(m) }
-func (*ServerPush) ProtoMessage()               {}
+func (m *ServerPush) Reset()         { *m = ServerPush{} }
+func (m *ServerPush) String() string { return pb.CompactTextString(m) }
+func (*ServerPush) ProtoMessage()    {}
 
 type MultiPush struct {
 	Msg     *ServerPush `protobuf:"bytes,1,opt,name=msg" json:"msg,omitempty"`
@@ -44,9 +43,9 @@ type MultiPush struct {
 	AppID   int32       `protobuf:"varint,3,opt,name=appID" json:"appID,omitempty"`
 }
 
-func (m *MultiPush) Reset()                    { *m = MultiPush{} }
-func (m *MultiPush) String() string            { return pb.CompactTextString(m) }
-func (*MultiPush) ProtoMessage()               {}
+func (m *MultiPush) Reset()         { *m = MultiPush{} }
+func (m *MultiPush) String() string { return pb.CompactTextString(m) }
+func (*MultiPush) ProtoMessage()    {}
 
 func init() {
 	httpTransport := &http.Transport{
@@ -84,25 +83,25 @@ func main() {
 		panic(err)
 	}
 
-	t, err = strconv.Atoi(os.Args[4])
+	_, err = strconv.Atoi(os.Args[4])
 	if err != nil {
 		panic(err)
 	}
-/*
-	num := runtime.NumCPU() * 8
+	/*
+		num := runtime.NumCPU() * 8
 
-	l := length / num
-	b, e := begin, begin+l
-	time.AfterFunc(time.Duration(t)*time.Second, stop)
-	for i := 0; i < num; i++ {
-		go startPush(b, e)
-		b += l
-		e += l
-	}
-	if b < begin+length {
-		go startPush(b, begin+length)
-	}
-*/
+		l := length / num
+		b, e := begin, begin+l
+		time.AfterFunc(time.Duration(t)*time.Second, stop)
+		for i := 0; i < num; i++ {
+			go startPush(b, e)
+			b += l
+			e += l
+		}
+		if b < begin+length {
+			go startPush(b, begin+length)
+		}
+	*/
 	go startPush(begin, begin+length)
 	time.Sleep(9999 * time.Hour)
 }
@@ -133,7 +132,7 @@ func startPush(b, e int) {
 			continue
 		}
 
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			lg.Printf("post error (%v)", err)
 			return
@@ -141,7 +140,7 @@ func startPush(b, e int) {
 		resp.Body.Close()
 
 		lg.Printf("response %s", string(body))
-		
+
 		time.Sleep(10 * time.Second)
 	}
 }

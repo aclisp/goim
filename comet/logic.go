@@ -50,7 +50,6 @@ func InitLogicRpc(addrs map[string]struct{}) (err error) {
 		logicServiceSet = append(logicServiceSet, rpcClient)
 		log.Info("init logic rpc: %v", rpcOptions)
 	}
-	rand.Seed(time.Now().Unix())
 	return
 }
 

@@ -32,7 +32,6 @@ func NewPool(num, size int) (p *Pool) {
 // Init init the memory buffer.
 func (p *Pool) Init(num, size int) {
 	p.init(num, size)
-	return
 }
 
 // init init the memory buffer.
@@ -62,7 +61,6 @@ func (p *Pool) grow() {
 	}
 	b.buf = buf[(i-1)*p.size : i*p.size]
 	b.next = nil
-	return
 }
 
 // Get get a free memory buffer.
@@ -83,5 +81,4 @@ func (p *Pool) Put(b *Buffer) {
 	b.next = p.free
 	p.free = b
 	p.lock.Unlock()
-	return
 }
