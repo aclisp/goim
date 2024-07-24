@@ -7,56 +7,23 @@
   </head>
   <body>
     <h1>client demo</h1>
-    <button onclick="QueryUserAttentionList()">Click me</button>
     <button onclick="ChangeRoom()">Change room</button>
     <input id="roomid">
-    <script src="https://cdn.rawgit.com/dcodeIO/protobuf.js/6.8.0/dist/protobuf.js"></script>
     <script src="client.js"></script>
     <script>
-      var client = new TarsClient({
-          appid: 10001,
+      var client = new IMClient({
+          appid: 0,
           uid: 88889999,
           roomid: -1,
-          //ticket: "abcde",
           notify: function(data) {
-              alert('收到广播消息: ' + data.test);
+              alert('收到广播消息: ' + JSON.stringify(data));
           }
       });
 
-      var proto = null;
-      protobuf.load("AttentionSrv.proto", function(err, root) {
-          if (err)
-              throw err;
-          proto = root
-      });
-      function QueryUserAttentionList() {
-          client.call({
-              proto: proto,
-              reqtype: "YYLiteApp.AttentionSrv.PQueryUserAttentionListReq",
-              rsptype: "YYLiteApp.AttentionSrv.PQueryUserAttentionListRsp",
-              req: {
-                  Uid: 1304934619,
-                  AppData: "mobAttentionLite"
-              },
-              service: 'YYLiteApp.AttentionSrv.AttentionObj',
-              method: 'QueryUserAttentionList',
-              context: {
-                  uid: "1304934619",
-                  sid: "-1"
-              },
-              callback: function(rsp) {
-                  var note = rsp.Uid + " 的关注列表：\n\n";
-                  for (var uid in rsp.Attentionlist) {
-                      note += uid + " " + rsp.Attentionlist[uid] + "\n";
-                  }
-                  alert(note);
-              }
-          });
-      }
       function ChangeRoom() {
           var roomid = parseInt(document.querySelector('#roomid').value);
-          client.join(roomid, function(ret, msg) {
-              var note = ((ret === 0)?"成功!":"失败!") + " " + msg;
+          client.switchRoom(roomid, function(ret, msg) {
+              var note = ((ret === 0)?"成功!":"失败!") + " ret=" + ret + " msg=" + msg;
               alert(note)
           });
       }

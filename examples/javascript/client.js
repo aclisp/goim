@@ -6,10 +6,10 @@
         this.wsocket = null;
         this.callid = 0;
         this.pending = {};
-        this.createConnect(MAX_CONNECT_TIME, DELAY);
+        this._createConnect(MAX_CONNECT_TIME, DELAY);
     };
 
-    Client.prototype.nextCallid = function() {
+    Client.prototype._nextCallid = function() {
         if (this.callid === Number.MAX_SAFE_INTEGER) {
             this.callid = 1;
         } else {
@@ -18,7 +18,7 @@
         return this.callid;
     };
 
-    Client.prototype.createConnect = function(max, delay) {
+    Client.prototype._createConnect = function(max, delay) {
         var self = this;
         if (max === 0) {
             return;
@@ -28,7 +28,7 @@
         var heartbeatInterval;
 
         function connect() {
-            self.wsocket = new WebSocket('ws://test-goim.yy.com:8081/sub');
+            self.wsocket = new WebSocket('ws://localhost:8191/sub');
             var ws = self.wsocket;
             var auth = false;
 
@@ -40,7 +40,8 @@
                 var receives = JSON.parse(evt.data);
                 for(var i=0; i<receives.length; i++) {
                     var data = receives[i];
-                    if (data.op === 8) {
+                    if (data.op === 8) { // OP_AUTH_REPLY 收到认证回包
+                        // TODO 需要检查认证结果
                         auth = true;
                         heartbeat();
                         heartbeatInterval = setInterval(heartbeat, 30 * 1000);
@@ -48,22 +49,13 @@
                     if (!auth) {
                         setTimeout(getAuth, delay);
                     }
-                    if (auth && data.op === 5) {
-                        if (data.seq > 0) {
-                            var p = self.pending[data.seq];
-                            delete self.pending[data.seq];
-                            var rspT = p.rspT;
-                            var rspM = rspT.decode(stringToBuffer(data.body.rsp));
-                            var rsp = rspT.toObject(rspM);
-                            p.callback(rsp);
-                        } else {
-                            var notify = self.options.notify;
-                            if (notify && data.seq === 0) {
-                                notify(data.body);
-                            }
+                    if (auth && data.op === 5) { // OP_SEND_SMS_REPLY 收到业务推送
+                        var notify = self.options.notify;
+                        if (notify && data.seq === 0) { // 业务主动发起推送包 seq 一定是 0
+                            notify(data.body);
                         }
                     }
-                    if (auth && data.op === 16) {
+                    if (auth && data.op === 16) { // OP_ROOM_CHANGE_REPLY 收到进房回包
                         if (data.seq > 0) {
                             var p = self.pending[data.seq];
                             delete self.pending[data.seq];
@@ -78,16 +70,16 @@
                 setTimeout(reConnect, delay);
             };
 
-            function heartbeat() {
+            function heartbeat() { // 发送心跳包
                 ws.send(JSON.stringify({
                     'ver': 1,
-                    'op': 2,
-                    'seq': self.nextCallid(),
+                    'op': 2, // OP_HEARTBEAT
+                    'seq': self._nextCallid(),
                     'body': {}
                 }));
             }
 
-            function getAuth() {
+            function getAuth() { // 发送认证包
                 var body = [self.options.appid, self.options.uid, self.options.roomid].join('|');
                 if (self.options.ticket) {
                     body += '|';
@@ -95,8 +87,8 @@
                 }
                 ws.send(JSON.stringify({
                     'ver': 1,
-                    'op': 7,
-                    'seq': self.nextCallid(),
+                    'op': 7, // OP_AUTH
+                    'seq': self._nextCallid(),
                     'body': body
                 }));
             }
@@ -104,51 +96,18 @@
         }
 
         function reConnect() {
-            self.createConnect(--max, delay * 2);
+            self._createConnect(--max, delay * 2);
         }
     };
 
-    Client.prototype.send = function(rpc, seq) {
+    /**
+     * 切换房间
+     */
+    Client.prototype.switchRoom = function(roomid, callback) {
+        var seq = this._nextCallid();
         this.wsocket.send(JSON.stringify({
             'ver': 1,
-            'op': 4,
-            'seq': seq,
-            'body': rpc
-        }));
-    };
-
-    Client.prototype.call = function(options) {
-        var proto = options.proto;
-        var reqtype = options.reqtype;
-        var rsptype = options.rsptype;
-        var req = options.req;
-        var service = options.service;
-        var method = options.method;
-        var context = options.context;
-        var callback = options.callback;
-
-        var reqT = proto.lookupType(reqtype);
-        var rspT = proto.lookupType(rsptype);
-        var reqM = reqT.fromObject(req);
-        var reqB = reqT.encode(reqM).finish();
-        var seq = this.nextCallid();
-        this.send({
-            obj: service,
-            func: method,
-            req: bufferToString(reqB),
-            opt: context
-        }, seq);
-        this.pending[seq] = {
-            rspT: rspT,
-            callback: callback
-        };
-    };
-
-    Client.prototype.join = function(roomid, callback) {
-        var seq = this.nextCallid();
-        this.wsocket.send(JSON.stringify({
-            'ver': 1,
-            'op': 15,
+            'op': 15, // OP_ROOM_CHANGE
             'seq': seq,
             'body': this.options.appid + '|' + roomid
         }));
@@ -157,7 +116,7 @@
         }
     };
 
-    win['TarsClient'] = Client;
+    win['IMClient'] = Client;
 })(window);
 
 function bufferToString(buffer) {
